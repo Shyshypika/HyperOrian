@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101522">
+  <title>Webrowser</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: #101522; color: #eef2ff; }
+    header { padding: 18px clamp(16px, 4vw, 48px) 16px; background: #171e2e; border-bottom: 1px solid #293247; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+    .mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, #7c6cff, #41c8de); font-weight: 800; }
+    h1 { margin: 0; font-size: 1.15rem; letter-spacing: .01em; }
+    .subtitle { margin: 3px 0 0; color: #aab5cb; font-size: .85rem; }
+    form { display: flex; gap: 9px; max-width: 1000px; margin: auto; }
+    input { min-width: 0; flex: 1; padding: 12px 15px; border: 1px solid #39445b; border-radius: 11px; outline: none; background: #0e1420; color: inherit; font: inherit; }
+    input:focus { border-color: #8c82ff; box-shadow: 0 0 0 3px #8c82ff30; }
+    button, .open-link { border: 0; border-radius: 10px; padding: 0 16px; background: #7165e8; color: white; font: inherit; font-weight: 650; cursor: pointer; }
+    button:hover, .open-link:hover { background: #857af4; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 11px auto 0; color: #aab5cb; font-size: .8rem; }
+    .open-link { padding: 7px 11px; text-decoration: none; white-space: nowrap; }
+    main { min-height: 0; padding: 18px clamp(12px, 3vw, 32px) 24px; }
+    .frame-wrap { height: 100%; min-height: 360px; overflow: hidden; border: 1px solid #293247; border-radius: 14px; background: #fff; }
+    iframe { display: block; width: 100%; height: 100%; min-height: 360px; border: 0; background: white; }
+    .welcome { display: grid; place-items: center; height: 100%; min-height: 360px; padding: 30px; text-align: center; color: #172033; background: radial-gradient(circle at 50% 30%, #e8eaff, #f8f9ff 60%); }
+    .welcome h2 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+    .welcome p { max-width: 520px; margin: 0; color: #59647a; line-height: 1.6; }
+    @media (max-width: 560px) { header { padding-top: 14px; } form { gap: 7px; } button { padding: 0 12px; } .toolbar { align-items: flex-start; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">W</div>
+      <div><h1>Webrowser</h1><p class="subtitle">A simple web browsing starting point</p></div>
+    </div>
+    <form id="address-form" role="search">
+      <input id="address" type="text" inputmode="url" autocomplete="url" placeholder="Enter a website address (for example, example.com)" aria-label="Website address">
+      <button type="submit">Go</button>
+    </form>
+    <div class="toolbar">
+      <span id="status" aria-live="polite">Enter a URL to get started. Some sites don't allow embedding.</span>
+      <a id="open-link" class="open-link" href="about:blank" target="_blank" rel="noopener noreferrer">Open in new tab ↗</a>
+    </div>
+  </header>
+  <main>
+    <section class="frame-wrap" aria-label="Website view">
+      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Type a website address above and select Go. Sites that block embedded viewing can be opened in a separate tab instead.</p></div></div>
+      <iframe id="web-view" title="Website view" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById('address-form');
+    const address = document.getElementById('address');
+    const frame = document.getElementById('web-view');
+    const welcome = document.getElementById('welcome');
+    const status = document.getElementById('status');
+    const openLink = document.getElementById('open-link');
+
+    function normalizeAddress(value) {
+      const input = value.trim();
+      if (!input) return null;
+      const candidate = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(input) ? input : `https://${input}`;
+      try {
+        const url = new URL(candidate);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+        return url.href;
+      } catch {
+        return null;
+      }
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const url = normalizeAddress(address.value);
+      if (!url) {
+        status.textContent = 'Please enter a valid http:// or https:// web address.';
+        address.focus();
+        return;
+      }
+      address.value = url;
+      openLink.href = url;
+      frame.hidden = false;
+      welcome.hidden = true;
+      status.textContent = 'Loading website. If it does not appear, use “Open in new tab”.';
+      frame.src = url;
+    });
+
+    frame.addEventListener('load', () => {
+      if (!frame.hidden) status.textContent = 'Website loaded, if the site permits embedded viewing.';
+    });
+  </script>
+</body>
+</html>
