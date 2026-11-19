@@ -12,7 +12,7 @@
     header { padding: 18px clamp(16px, 4vw, 48px) 16px; background: #171e2e; border-bottom: 1px solid #293247; }
     .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
     .mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, #7c6cff, #41c8de); font-weight: 800; }
-    h1 { margin: 0; font-size: 1.15rem; letter-spacing: .01em; }
+    h1 { margin: 0; font-size: 1.15rem; }
     .subtitle { margin: 3px 0 0; color: #aab5cb; font-size: .85rem; }
     form { display: flex; gap: 9px; max-width: 1000px; margin: auto; }
     input { min-width: 0; flex: 1; padding: 12px 15px; border: 1px solid #39445b; border-radius: 11px; outline: none; background: #0e1420; color: inherit; font: inherit; }
@@ -34,20 +34,20 @@
   <header>
     <div class="brand">
       <div class="mark" aria-hidden="true">W</div>
-      <div><h1>Webrowser</h1><p class="subtitle">A simple web browsing starting point</p></div>
+      <div><h1>Webrowser</h1><p class="subtitle">Browse the web and search with DuckDuckGo</p></div>
     </div>
     <form id="address-form" role="search">
-      <input id="address" type="text" inputmode="url" autocomplete="url" placeholder="Enter a website address (for example, example.com)" aria-label="Website address">
-      <button type="submit">Go</button>
+      <input id="address" type="text" autocomplete="off" placeholder="Search DuckDuckGo or enter a website address" aria-label="Search or website address">
+      <button type="submit">Search / Go</button>
     </form>
     <div class="toolbar">
-      <span id="status" aria-live="polite">Enter a URL to get started. Some sites don't allow embedding.</span>
-      <a id="open-link" class="open-link" href="about:blank" target="_blank" rel="noopener noreferrer">Open in new tab ↗</a>
+      <span id="status" aria-live="polite">Search with DuckDuckGo or enter a website URL. Some sites block embedded viewing.</span>
+      <a id="open-link" class="open-link" href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">Open result in new tab ↗</a>
     </div>
   </header>
   <main>
     <section class="frame-wrap" aria-label="Website view">
-      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Type a website address above and select Go. Sites that block embedded viewing can be opened in a separate tab instead.</p></div></div>
+      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Enter a search term to search DuckDuckGo, or type a web address such as example.com. If a site does not display here, open it in a new tab.</p></div></div>
       <iframe id="web-view" title="Website view" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
     </section>
   </main>
@@ -59,10 +59,17 @@
     const status = document.getElementById('status');
     const openLink = document.getElementById('open-link');
 
-    function normalizeAddress(value) {
+    function getDestination(value) {
       const input = value.trim();
       if (!input) return null;
-      const candidate = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(input) ? input : `https://${input}`;
+      // Treat explicit http(s) URLs and host-like values as website addresses;
+      // other input is searched using DuckDuckGo.
+      const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(input);
+      const looksLikeHost = /^(localhost|(?:[\w-]+\.)+[a-zA-Z]{2,})(?::\d+)?(?:[/?#].*)?$/.test(input);
+      if (!hasScheme && !looksLikeHost) {
+        return `https://duckduckgo.com/?q=${encodeURIComponent(input)}`;
+      }
+      const candidate = hasScheme ? input : `https://${input}`;
       try {
         const url = new URL(candidate);
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
@@ -74,22 +81,22 @@
 
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      const url = normalizeAddress(address.value);
-      if (!url) {
-        status.textContent = 'Please enter a valid http:// or https:// web address.';
+      const destination = getDestination(address.value);
+      if (!destination) {
+        status.textContent = 'Please enter a search term or a valid http:// or https:// web address.';
         address.focus();
         return;
       }
-      address.value = url;
-      openLink.href = url;
+      openLink.href = destination;
+      openLink.textContent = 'Open result in new tab ↗';
       frame.hidden = false;
       welcome.hidden = true;
-      status.textContent = 'Loading website. If it does not appear, use “Open in new tab”.';
-      frame.src = url;
+      status.textContent = 'Opening destination. If it does not display here, use “Open result in new tab”.';
+      frame.src = destination;
     });
 
     frame.addEventListener('load', () => {
-      if (!frame.hidden) status.textContent = 'Website loaded, if the site permits embedded viewing.';
+      if (!frame.hidden) status.textContent = 'Navigation complete, if the destination allows embedded viewing.';
     });
   </script>
 </body>
