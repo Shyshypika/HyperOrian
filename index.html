@@ -60,16 +60,16 @@
     </div>
     <form id="address-form" role="search">
       <input id="address" type="text" autocomplete="off" placeholder="Search or enter a website address" aria-label="Search or website address">
-      <button type="submit">Search / Go</button>
+      <button type="submit">Open</button>
     </form>
     <div class="toolbar">
-      <span id="status" aria-live="polite">Search the web or enter a website URL. Some sites block embedded viewing.</span>
-      <a id="open-link" class="open-link" href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">Open result in new tab ↗</a>
+      <span id="status" aria-live="polite">Enter a search or website URL. It will open in a new about:blank tab.</span>
+      <a id="open-link" class="open-link" href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">Open directly ↗</a>
     </div>
   </header>
   <main>
     <section class="frame-wrap" aria-label="Website view">
-      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Enter a search term or a web address such as example.com. If a site does not display here, open it in a new tab.</p></div></div>
+      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Enter a search term or web address, then choose Open. The page opens in a new about:blank tab.</p></div></div>
       <iframe id="web-view" title="Website view" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
     </section>
   </main>
@@ -77,11 +77,11 @@
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <div class="dialog-head"><h2 id="settings-title">Customize Webrowser</h2><button class="secondary" type="button" data-close="settings-dialog" aria-label="Close customization">✕</button></div>
     <div class="dialog-body">
-      <p>These preferences are saved in this browser on this device.</p>
+      <p>Preferences are saved in this browser on this device.</p>
       <label for="search-engine">Search engine<select id="search-engine"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option></select></label>
       <label for="accent-color">Accent color<select id="accent-color"><option value="#7165e8">Violet</option><option value="#168a82">Teal</option><option value="#2875cc">Blue</option><option value="#c04c79">Rose</option></select></label>
-      <div class="notice"><strong>Optional proxy:</strong> Only use an endpoint you operate or trust. Requests sent through it may be visible to its operator. This page does not provide or deploy a proxy service.</div>
-      <label for="proxy-endpoint">Your proxy worker URL (optional)<input id="proxy-endpoint" type="url" placeholder="https://your-worker.example.workers.dev/" autocomplete="url"></label>
+      <div class="notice"><strong>Proxy endpoint:</strong> Requests may be visible to its operator. Only use a proxy you trust.</div>
+      <label for="proxy-endpoint">Proxy worker URL<input id="proxy-endpoint" type="url" placeholder="https://your-worker.example.workers.dev/"></label>
       <label class="check-row" for="proxy-enabled"><input id="proxy-enabled" type="checkbox"> Use this proxy for browsing</label>
     </div>
     <div class="dialog-foot"><button class="secondary" id="reset-settings" type="button">Reset</button><button id="save-settings" type="button">Save preferences</button></div>
@@ -90,12 +90,11 @@
   <dialog id="vpn-dialog" aria-labelledby="vpn-title">
     <div class="dialog-head"><h2 id="vpn-title">VPN Gate</h2><button class="secondary" type="button" data-close="vpn-dialog" aria-label="Close VPN Gate information">✕</button></div>
     <div class="dialog-body">
-      <p>VPN Gate is a volunteer-run public VPN relay project operated by the University of Tsukuba. Visit its official site to review available relays and setup guides.</p>
-      <div class="notice"><strong>Important:</strong> This Webrowser is a website and cannot create or control a device-wide VPN connection. To use a VPN Gate relay, install and configure a compatible VPN client using the official instructions.</div>
-      <label for="vpn-platform">Show setup guidance for<select id="vpn-platform"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iPhone / iPad</option></select></label>
+      <p>VPN Gate is a volunteer-run public VPN relay project operated by the University of Tsukuba.</p>
+      <div class="notice"><strong>Important:</strong> This website cannot create or control a device-wide VPN connection.</div>
+      <label for="vpn-platform">Setup guidance<select id="vpn-platform"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iPhone / iPad</option></select></label>
       <p id="vpn-guidance" aria-live="polite">Open the official VPN Gate site and follow its Windows SoftEther VPN Client guide.</p>
       <a href="https://www.vpngate.net/en/" target="_blank" rel="noopener noreferrer">Visit the official VPN Gate site ↗</a>
-      <small>Public relays are operated by volunteers. Review the service's privacy and security information before connecting.</small>
     </div>
     <div class="dialog-foot"><button class="secondary" type="button" data-close="vpn-dialog">Done</button></div>
   </dialog>
@@ -113,7 +112,8 @@
     const accentSelect = document.getElementById('accent-color');
     const proxyInput = document.getElementById('proxy-endpoint');
     const proxyEnabledInput = document.getElementById('proxy-enabled');
-    const defaultPreferences = { engine: 'duckduckgo', accent: '#7165e8', proxyEndpoint: '', proxyEnabled: false };
+    const defaultProxy = 'https://autumn-term-0b9c.yangdaniel64.workers.dev/';
+    const defaultPreferences = { engine: 'duckduckgo', accent: '#7165e8', proxyEndpoint: defaultProxy, proxyEnabled: true };
     const engines = {
       duckduckgo: (query) => `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
       google: (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`,
@@ -174,17 +174,25 @@
       }
       const loadUrl = getProxyUrl(destination);
       if (!loadUrl) {
-        status.textContent = 'Enter a valid HTTPS proxy endpoint (HTTP is allowed only for localhost), or turn off proxy mode in Customize.';
+        status.textContent = 'Enter a valid HTTPS proxy endpoint, or turn off proxy mode in Customize.';
         return;
       }
+
+      const blankTab = window.open('about:blank', '_blank');
+      if (!blankTab) {
+        status.textContent = 'The new tab was blocked. Allow pop-ups and try again.';
+        return;
+      }
+      blankTab.opener = null;
+      blankTab.location.replace(loadUrl);
+
       openLink.href = destination;
       openLink.textContent = 'Open destination directly ↗';
+      status.textContent = preferences.proxyEnabled
+        ? 'Opened through the configured proxy in a new about:blank tab.'
+        : 'Opened in a new about:blank tab.';
       frame.hidden = false;
       welcome.hidden = true;
-      status.textContent = preferences.proxyEnabled
-        ? 'Sending this request through your configured proxy. The proxy operator may see your activity.'
-        : 'Opening destination. If it does not display here, use “Open destination directly”.';
-      frame.src = loadUrl;
     });
 
     frame.addEventListener('load', () => {
@@ -201,10 +209,9 @@
       if (proxyEnabledInput.checked) {
         try {
           const parsed = new URL(proxyEndpoint);
-          const localHttp = parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
-          if ((parsed.protocol !== 'https:' && !localHttp) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('Invalid proxy URL');
+          if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('Invalid proxy URL');
         } catch {
-          status.textContent = 'Proxy must be a valid HTTPS URL (HTTP is allowed only for localhost), without credentials, query, or fragment.';
+          status.textContent = 'Proxy must be a valid HTTPS URL without credentials, query, or fragment.';
           proxyInput.focus();
           return;
         }
