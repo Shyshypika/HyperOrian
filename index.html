@@ -6,25 +6,15 @@
   <meta name="theme-color" content="#101522">
   <title>Webrowser</title>
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --accent: #7165e8;
-      --accent-hover: #857af4;
-      --surface: #171e2e;
-      --background: #101522;
-      --border: #293247;
-      --muted: #aab5cb;
-    }
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --accent: #7165e8; --accent-hover: #857af4; --surface: #171e2e; --background: #101522; --border: #293247; --muted: #aab5cb; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--background); color: #eef2ff; }
     header { padding: 18px clamp(16px, 4vw, 48px) 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
     .mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #41c8de); font-weight: 800; }
     h1 { margin: 0; font-size: 1.15rem; }
     .subtitle { margin: 3px 0 0; color: var(--muted); font-size: .85rem; }
     .top-actions { display: flex; gap: 8px; margin-left: auto; }
-    .brand { flex-wrap: wrap; }
     form { display: flex; gap: 9px; max-width: 1000px; margin: auto; }
     input, select { min-width: 0; padding: 12px 15px; border: 1px solid #39445b; border-radius: 11px; outline: none; background: #0e1420; color: inherit; font: inherit; }
     input { flex: 1; }
@@ -41,7 +31,7 @@
     .welcome { display: grid; place-items: center; height: 100%; min-height: 360px; padding: 30px; text-align: center; color: #172033; background: radial-gradient(circle at 50% 30%, #e8eaff, #f8f9fc 65%); }
     .welcome h2 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
     .welcome p { max-width: 520px; margin: 0; color: #59647a; line-height: 1.6; }
-    dialog { width: min(520px, calc(100% - 28px)); max-height: min(85vh, 700px); padding: 0; border: 1px solid #39445b; border-radius: 16px; background: #171e2e; color: #eef2ff; box-shadow: 0 24px 80px #0009; }
+    dialog { width: min(520px, calc(100% - 28px)); max-height: min(85vh, 700px); overflow: auto; padding: 0; border: 1px solid #39445b; border-radius: 16px; background: #171e2e; color: #eef2ff; box-shadow: 0 24px 80px #0009; }
     dialog::backdrop { background: #070b13b8; backdrop-filter: blur(3px); }
     .dialog-head, .dialog-body, .dialog-foot { padding: 18px 20px; }
     .dialog-head { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
@@ -49,19 +39,13 @@
     .dialog-body { display: grid; gap: 16px; line-height: 1.5; }
     .dialog-body p { margin: 0; color: var(--muted); }
     .dialog-body label { display: grid; gap: 7px; font-size: .9rem; font-weight: 600; }
-    .dialog-body select { width: 100%; }
+    .dialog-body input, .dialog-body select { width: 100%; }
     .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); }
     .notice { padding: 12px; border: 1px solid #6f5c2c; border-radius: 10px; background: #352d1a; color: #ffe8ad; font-size: .88rem; }
     .dialog-body a { color: #aaa1ff; }
-    @media (max-width: 560px) {
-      header { padding-top: 14px; }
-      .brand { align-items: flex-start; }
-      .top-actions { width: 100%; margin-left: 48px; }
-      .top-actions button { flex: 1; }
-      form { gap: 7px; }
-      form button { padding: 0 12px; }
-      .toolbar { align-items: flex-start; flex-direction: column; }
-    }
+    .check-row { display: flex !important; align-items: center; gap: 10px !important; }
+    .check-row input { width: auto; }
+    @media (max-width: 560px) { header { padding-top: 14px; } .brand { align-items: flex-start; } .top-actions { width: 100%; margin-left: 48px; } .top-actions button { flex: 1; } form { gap: 7px; } form button { padding: 0 12px; } .toolbar { align-items: flex-start; flex-direction: column; } }
   </style>
 </head>
 <body>
@@ -94,12 +78,11 @@
     <div class="dialog-head"><h2 id="settings-title">Customize Webrowser</h2><button class="secondary" type="button" data-close="settings-dialog" aria-label="Close customization">✕</button></div>
     <div class="dialog-body">
       <p>These preferences are saved in this browser on this device.</p>
-      <label for="search-engine">Search engine
-        <select id="search-engine"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option></select>
-      </label>
-      <label for="accent-color">Accent color
-        <select id="accent-color"><option value="#7165e8">Violet</option><option value="#168a82">Teal</option><option value="#2875cc">Blue</option><option value="#c04c79">Rose</option></select>
-      </label>
+      <label for="search-engine">Search engine<select id="search-engine"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option></select></label>
+      <label for="accent-color">Accent color<select id="accent-color"><option value="#7165e8">Violet</option><option value="#168a82">Teal</option><option value="#2875cc">Blue</option><option value="#c04c79">Rose</option></select></label>
+      <div class="notice"><strong>Optional proxy:</strong> Only use an endpoint you operate or trust. Requests sent through it may be visible to its operator. This page does not provide or deploy a proxy service.</div>
+      <label for="proxy-endpoint">Your proxy worker URL (optional)<input id="proxy-endpoint" type="url" placeholder="https://your-worker.example.workers.dev/" autocomplete="url"></label>
+      <label class="check-row" for="proxy-enabled"><input id="proxy-enabled" type="checkbox"> Use this proxy for browsing</label>
     </div>
     <div class="dialog-foot"><button class="secondary" id="reset-settings" type="button">Reset</button><button id="save-settings" type="button">Save preferences</button></div>
   </dialog>
@@ -109,9 +92,7 @@
     <div class="dialog-body">
       <p>VPN Gate is a volunteer-run public VPN relay project operated by the University of Tsukuba. Visit its official site to review available relays and setup guides.</p>
       <div class="notice"><strong>Important:</strong> This Webrowser is a website and cannot create or control a device-wide VPN connection. To use a VPN Gate relay, install and configure a compatible VPN client using the official instructions.</div>
-      <label for="vpn-platform">Show setup guidance for
-        <select id="vpn-platform"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iPhone / iPad</option></select>
-      </label>
+      <label for="vpn-platform">Show setup guidance for<select id="vpn-platform"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iPhone / iPad</option></select></label>
       <p id="vpn-guidance" aria-live="polite">Open the official VPN Gate site and follow its Windows SoftEther VPN Client guide.</p>
       <a href="https://www.vpngate.net/en/" target="_blank" rel="noopener noreferrer">Visit the official VPN Gate site ↗</a>
       <small>Public relays are operated by volunteers. Review the service's privacy and security information before connecting.</small>
@@ -130,7 +111,9 @@
     const vpnDialog = document.getElementById('vpn-dialog');
     const engineSelect = document.getElementById('search-engine');
     const accentSelect = document.getElementById('accent-color');
-    const defaultPreferences = { engine: 'duckduckgo', accent: '#7165e8' };
+    const proxyInput = document.getElementById('proxy-endpoint');
+    const proxyEnabledInput = document.getElementById('proxy-enabled');
+    const defaultPreferences = { engine: 'duckduckgo', accent: '#7165e8', proxyEndpoint: '', proxyEnabled: false };
     const engines = {
       duckduckgo: (query) => `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
       google: (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`,
@@ -142,6 +125,8 @@
       const saved = JSON.parse(localStorage.getItem('webrowser-preferences') || '{}');
       if (Object.hasOwn(engines, saved.engine)) preferences.engine = saved.engine;
       if (['#7165e8', '#168a82', '#2875cc', '#c04c79'].includes(saved.accent)) preferences.accent = saved.accent;
+      if (typeof saved.proxyEndpoint === 'string') preferences.proxyEndpoint = saved.proxyEndpoint;
+      if (typeof saved.proxyEnabled === 'boolean') preferences.proxyEnabled = saved.proxyEnabled;
     } catch { /* Storage may be disabled; defaults still work for this visit. */ }
 
     function applyPreferences() {
@@ -149,6 +134,8 @@
       document.documentElement.style.setProperty('--accent-hover', preferences.accent);
       engineSelect.value = preferences.engine;
       accentSelect.value = preferences.accent;
+      proxyInput.value = preferences.proxyEndpoint;
+      proxyEnabledInput.checked = preferences.proxyEnabled;
       openLink.href = engines[preferences.engine]('');
     }
 
@@ -166,6 +153,17 @@
       } catch { return null; }
     }
 
+    function getProxyUrl(destination) {
+      if (!preferences.proxyEnabled) return destination;
+      try {
+        const endpoint = new URL(preferences.proxyEndpoint);
+        const localHttp = endpoint.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname);
+        if ((endpoint.protocol !== 'https:' && !localHttp) || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) return null;
+        endpoint.searchParams.set('url', destination);
+        return endpoint.href;
+      } catch { return null; }
+    }
+
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const destination = getDestination(address.value);
@@ -174,12 +172,19 @@
         address.focus();
         return;
       }
+      const loadUrl = getProxyUrl(destination);
+      if (!loadUrl) {
+        status.textContent = 'Enter a valid HTTPS proxy endpoint (HTTP is allowed only for localhost), or turn off proxy mode in Customize.';
+        return;
+      }
       openLink.href = destination;
-      openLink.textContent = 'Open result in new tab ↗';
+      openLink.textContent = 'Open destination directly ↗';
       frame.hidden = false;
       welcome.hidden = true;
-      status.textContent = 'Opening destination. If it does not display here, use “Open result in new tab”.';
-      frame.src = destination;
+      status.textContent = preferences.proxyEnabled
+        ? 'Sending this request through your configured proxy. The proxy operator may see your activity.'
+        : 'Opening destination. If it does not display here, use “Open destination directly”.';
+      frame.src = loadUrl;
     });
 
     frame.addEventListener('load', () => {
@@ -192,11 +197,23 @@
       button.addEventListener('click', () => document.getElementById(button.dataset.close).close());
     });
     document.getElementById('save-settings').addEventListener('click', () => {
-      preferences = { engine: engineSelect.value, accent: accentSelect.value };
+      const proxyEndpoint = proxyInput.value.trim();
+      if (proxyEnabledInput.checked) {
+        try {
+          const parsed = new URL(proxyEndpoint);
+          const localHttp = parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+          if ((parsed.protocol !== 'https:' && !localHttp) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('Invalid proxy URL');
+        } catch {
+          status.textContent = 'Proxy must be a valid HTTPS URL (HTTP is allowed only for localhost), without credentials, query, or fragment.';
+          proxyInput.focus();
+          return;
+        }
+      }
+      preferences = { engine: engineSelect.value, accent: accentSelect.value, proxyEndpoint, proxyEnabled: proxyEnabledInput.checked };
       applyPreferences();
       try { localStorage.setItem('webrowser-preferences', JSON.stringify(preferences)); } catch { /* Preferences apply until this page is closed. */ }
       settingsDialog.close();
-      status.textContent = 'Your browser preferences have been saved.';
+      status.textContent = preferences.proxyEnabled ? 'Preferences saved. Browsing will use your configured proxy.' : 'Your browser preferences have been saved.';
     });
     document.getElementById('reset-settings').addEventListener('click', () => {
       preferences = { ...defaultPreferences };
