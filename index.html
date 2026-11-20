@@ -6,51 +6,119 @@
   <meta name="theme-color" content="#101522">
   <title>Webrowser</title>
   <style>
-    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --accent: #7165e8;
+      --accent-hover: #857af4;
+      --surface: #171e2e;
+      --background: #101522;
+      --border: #293247;
+      --muted: #aab5cb;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: #101522; color: #eef2ff; }
-    header { padding: 18px clamp(16px, 4vw, 48px) 16px; background: #171e2e; border-bottom: 1px solid #293247; }
+    body { margin: 0; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--background); color: #eef2ff; }
+    header { padding: 18px clamp(16px, 4vw, 48px) 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
     .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-    .mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, #7c6cff, #41c8de); font-weight: 800; }
+    .mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #41c8de); font-weight: 800; }
     h1 { margin: 0; font-size: 1.15rem; }
-    .subtitle { margin: 3px 0 0; color: #aab5cb; font-size: .85rem; }
+    .subtitle { margin: 3px 0 0; color: var(--muted); font-size: .85rem; }
+    .top-actions { display: flex; gap: 8px; margin-left: auto; }
+    .brand { flex-wrap: wrap; }
     form { display: flex; gap: 9px; max-width: 1000px; margin: auto; }
-    input { min-width: 0; flex: 1; padding: 12px 15px; border: 1px solid #39445b; border-radius: 11px; outline: none; background: #0e1420; color: inherit; font: inherit; }
-    input:focus { border-color: #8c82ff; box-shadow: 0 0 0 3px #8c82ff30; }
-    button, .open-link { border: 0; border-radius: 10px; padding: 0 16px; background: #7165e8; color: white; font: inherit; font-weight: 650; cursor: pointer; }
-    button:hover, .open-link:hover { background: #857af4; }
-    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 11px auto 0; color: #aab5cb; font-size: .8rem; }
-    .open-link { padding: 7px 11px; text-decoration: none; white-space: nowrap; }
+    input, select { min-width: 0; padding: 12px 15px; border: 1px solid #39445b; border-radius: 11px; outline: none; background: #0e1420; color: inherit; font: inherit; }
+    input { flex: 1; }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 19%, transparent); }
+    button, .open-link { border: 0; border-radius: 10px; padding: 9px 14px; background: var(--accent); color: white; font: inherit; font-weight: 650; cursor: pointer; text-decoration: none; }
+    button:hover, .open-link:hover { background: var(--accent-hover); }
+    button.secondary { background: #303a50; }
+    button.secondary:hover { background: #414d67; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 11px auto 0; color: var(--muted); font-size: .8rem; }
+    .open-link { padding: 7px 11px; white-space: nowrap; }
     main { min-height: 0; padding: 18px clamp(12px, 3vw, 32px) 24px; }
-    .frame-wrap { height: 100%; min-height: 360px; overflow: hidden; border: 1px solid #293247; border-radius: 14px; background: #fff; }
+    .frame-wrap { height: 100%; min-height: 360px; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
     iframe { display: block; width: 100%; height: 100%; min-height: 360px; border: 0; background: white; }
-    .welcome { display: grid; place-items: center; height: 100%; min-height: 360px; padding: 30px; text-align: center; color: #172033; background: radial-gradient(circle at 50% 30%, #e8eaff, #f8f9ff 60%); }
+    .welcome { display: grid; place-items: center; height: 100%; min-height: 360px; padding: 30px; text-align: center; color: #172033; background: radial-gradient(circle at 50% 30%, #e8eaff, #f8f9fc 65%); }
     .welcome h2 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
     .welcome p { max-width: 520px; margin: 0; color: #59647a; line-height: 1.6; }
-    @media (max-width: 560px) { header { padding-top: 14px; } form { gap: 7px; } button { padding: 0 12px; } .toolbar { align-items: flex-start; } }
+    dialog { width: min(520px, calc(100% - 28px)); max-height: min(85vh, 700px); padding: 0; border: 1px solid #39445b; border-radius: 16px; background: #171e2e; color: #eef2ff; box-shadow: 0 24px 80px #0009; }
+    dialog::backdrop { background: #070b13b8; backdrop-filter: blur(3px); }
+    .dialog-head, .dialog-body, .dialog-foot { padding: 18px 20px; }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .dialog-head h2 { margin: 0; font-size: 1.1rem; }
+    .dialog-body { display: grid; gap: 16px; line-height: 1.5; }
+    .dialog-body p { margin: 0; color: var(--muted); }
+    .dialog-body label { display: grid; gap: 7px; font-size: .9rem; font-weight: 600; }
+    .dialog-body select { width: 100%; }
+    .dialog-foot { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); }
+    .notice { padding: 12px; border: 1px solid #6f5c2c; border-radius: 10px; background: #352d1a; color: #ffe8ad; font-size: .88rem; }
+    .dialog-body a { color: #aaa1ff; }
+    @media (max-width: 560px) {
+      header { padding-top: 14px; }
+      .brand { align-items: flex-start; }
+      .top-actions { width: 100%; margin-left: 48px; }
+      .top-actions button { flex: 1; }
+      form { gap: 7px; }
+      form button { padding: 0 12px; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">
       <div class="mark" aria-hidden="true">W</div>
-      <div><h1>Webrowser</h1><p class="subtitle">Browse the web and search with DuckDuckGo</p></div>
+      <div><h1>Webrowser</h1><p class="subtitle">Browse the web and search with your preferred engine</p></div>
+      <div class="top-actions">
+        <button class="secondary" id="vpn-open" type="button">VPN Gate</button>
+        <button class="secondary" id="settings-open" type="button" aria-haspopup="dialog">Customize</button>
+      </div>
     </div>
     <form id="address-form" role="search">
-      <input id="address" type="text" autocomplete="off" placeholder="Search DuckDuckGo or enter a website address" aria-label="Search or website address">
+      <input id="address" type="text" autocomplete="off" placeholder="Search or enter a website address" aria-label="Search or website address">
       <button type="submit">Search / Go</button>
     </form>
     <div class="toolbar">
-      <span id="status" aria-live="polite">Search with DuckDuckGo or enter a website URL. Some sites block embedded viewing.</span>
+      <span id="status" aria-live="polite">Search the web or enter a website URL. Some sites block embedded viewing.</span>
       <a id="open-link" class="open-link" href="https://duckduckgo.com/" target="_blank" rel="noopener noreferrer">Open result in new tab ↗</a>
     </div>
   </header>
   <main>
     <section class="frame-wrap" aria-label="Website view">
-      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Enter a search term to search DuckDuckGo, or type a web address such as example.com. If a site does not display here, open it in a new tab.</p></div></div>
+      <div class="welcome" id="welcome"><div><h2>Welcome to Webrowser</h2><p>Enter a search term or a web address such as example.com. If a site does not display here, open it in a new tab.</p></div></div>
       <iframe id="web-view" title="Website view" sandbox="allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" hidden></iframe>
     </section>
   </main>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-head"><h2 id="settings-title">Customize Webrowser</h2><button class="secondary" type="button" data-close="settings-dialog" aria-label="Close customization">✕</button></div>
+    <div class="dialog-body">
+      <p>These preferences are saved in this browser on this device.</p>
+      <label for="search-engine">Search engine
+        <select id="search-engine"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option></select>
+      </label>
+      <label for="accent-color">Accent color
+        <select id="accent-color"><option value="#7165e8">Violet</option><option value="#168a82">Teal</option><option value="#2875cc">Blue</option><option value="#c04c79">Rose</option></select>
+      </label>
+    </div>
+    <div class="dialog-foot"><button class="secondary" id="reset-settings" type="button">Reset</button><button id="save-settings" type="button">Save preferences</button></div>
+  </dialog>
+
+  <dialog id="vpn-dialog" aria-labelledby="vpn-title">
+    <div class="dialog-head"><h2 id="vpn-title">VPN Gate</h2><button class="secondary" type="button" data-close="vpn-dialog" aria-label="Close VPN Gate information">✕</button></div>
+    <div class="dialog-body">
+      <p>VPN Gate is a volunteer-run public VPN relay project operated by the University of Tsukuba. Visit its official site to review available relays and setup guides.</p>
+      <div class="notice"><strong>Important:</strong> This Webrowser is a website and cannot create or control a device-wide VPN connection. To use a VPN Gate relay, install and configure a compatible VPN client using the official instructions.</div>
+      <label for="vpn-platform">Show setup guidance for
+        <select id="vpn-platform"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option><option value="android">Android</option><option value="ios">iPhone / iPad</option></select>
+      </label>
+      <p id="vpn-guidance" aria-live="polite">Open the official VPN Gate site and follow its Windows SoftEther VPN Client guide.</p>
+      <a href="https://www.vpngate.net/en/" target="_blank" rel="noopener noreferrer">Visit the official VPN Gate site ↗</a>
+      <small>Public relays are operated by volunteers. Review the service's privacy and security information before connecting.</small>
+    </div>
+    <div class="dialog-foot"><button class="secondary" type="button" data-close="vpn-dialog">Done</button></div>
+  </dialog>
+
   <script>
     const form = document.getElementById('address-form');
     const address = document.getElementById('address');
@@ -58,25 +126,44 @@
     const welcome = document.getElementById('welcome');
     const status = document.getElementById('status');
     const openLink = document.getElementById('open-link');
+    const settingsDialog = document.getElementById('settings-dialog');
+    const vpnDialog = document.getElementById('vpn-dialog');
+    const engineSelect = document.getElementById('search-engine');
+    const accentSelect = document.getElementById('accent-color');
+    const defaultPreferences = { engine: 'duckduckgo', accent: '#7165e8' };
+    const engines = {
+      duckduckgo: (query) => `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+      google: (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`,
+      bing: (query) => `https://www.bing.com/search?q=${encodeURIComponent(query)}`
+    };
+    let preferences = { ...defaultPreferences };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('webrowser-preferences') || '{}');
+      if (Object.hasOwn(engines, saved.engine)) preferences.engine = saved.engine;
+      if (['#7165e8', '#168a82', '#2875cc', '#c04c79'].includes(saved.accent)) preferences.accent = saved.accent;
+    } catch { /* Storage may be disabled; defaults still work for this visit. */ }
+
+    function applyPreferences() {
+      document.documentElement.style.setProperty('--accent', preferences.accent);
+      document.documentElement.style.setProperty('--accent-hover', preferences.accent);
+      engineSelect.value = preferences.engine;
+      accentSelect.value = preferences.accent;
+      openLink.href = engines[preferences.engine]('');
+    }
 
     function getDestination(value) {
       const input = value.trim();
       if (!input) return null;
-      // Treat explicit http(s) URLs and host-like values as website addresses;
-      // other input is searched using DuckDuckGo.
       const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(input);
       const looksLikeHost = /^(localhost|(?:[\w-]+\.)+[a-zA-Z]{2,})(?::\d+)?(?:[/?#].*)?$/.test(input);
-      if (!hasScheme && !looksLikeHost) {
-        return `https://duckduckgo.com/?q=${encodeURIComponent(input)}`;
-      }
+      if (!hasScheme && !looksLikeHost) return engines[preferences.engine](input);
       const candidate = hasScheme ? input : `https://${input}`;
       try {
         const url = new URL(candidate);
         if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
         return url.href;
-      } catch {
-        return null;
-      }
+      } catch { return null; }
     }
 
     form.addEventListener('submit', (event) => {
@@ -98,6 +185,37 @@
     frame.addEventListener('load', () => {
       if (!frame.hidden) status.textContent = 'Navigation complete, if the destination allows embedded viewing.';
     });
+
+    document.getElementById('settings-open').addEventListener('click', () => settingsDialog.showModal());
+    document.getElementById('vpn-open').addEventListener('click', () => vpnDialog.showModal());
+    document.querySelectorAll('[data-close]').forEach((button) => {
+      button.addEventListener('click', () => document.getElementById(button.dataset.close).close());
+    });
+    document.getElementById('save-settings').addEventListener('click', () => {
+      preferences = { engine: engineSelect.value, accent: accentSelect.value };
+      applyPreferences();
+      try { localStorage.setItem('webrowser-preferences', JSON.stringify(preferences)); } catch { /* Preferences apply until this page is closed. */ }
+      settingsDialog.close();
+      status.textContent = 'Your browser preferences have been saved.';
+    });
+    document.getElementById('reset-settings').addEventListener('click', () => {
+      preferences = { ...defaultPreferences };
+      applyPreferences();
+      try { localStorage.removeItem('webrowser-preferences'); } catch { /* Defaults apply for this visit. */ }
+    });
+
+    const vpnGuides = {
+      windows: 'Open the official VPN Gate site and follow its Windows SoftEther VPN Client guide.',
+      mac: 'Open the official VPN Gate site and follow the macOS setup guide for a compatible VPN client.',
+      linux: 'Open the official VPN Gate site and follow its Linux setup guide for a compatible VPN client.',
+      android: 'Open the official VPN Gate site and follow its Android setup guide using a compatible VPN client.',
+      ios: 'Open the official VPN Gate site and follow its iPhone / iPad setup guide using a compatible VPN client.'
+    };
+    document.getElementById('vpn-platform').addEventListener('change', (event) => {
+      document.getElementById('vpn-guidance').textContent = vpnGuides[event.target.value];
+    });
+
+    applyPreferences();
   </script>
 </body>
 </html>
