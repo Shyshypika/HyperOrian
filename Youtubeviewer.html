@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OmniPlayer - Modern Embedded Video Player</title>
+  <title>OmniPlayer - Modern Embedded Video Player & YouTube Search</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -41,6 +41,11 @@
     body {
       font-family: 'Inter', sans-serif;
       user-select: none;
+    }
+
+    /* Allow text selection inside inputs */
+    input, textarea {
+      user-select: text;
     }
 
     /* Custom Seek Bar Slider */
@@ -96,29 +101,80 @@
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.6);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col theme-violet antialiased overflow-x-hidden">
 
   <!-- Top Navigation Header -->
-  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <header class="border-b border-slate-800/80 bg-slate-900/75 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
       <!-- Logo & Branding -->
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-3 shrink-0">
         <div class="p-2 bg-gradient-to-tr from-brand-600 to-indigo-500 rounded-xl shadow-lg shadow-brand-500/20">
           <i data-lucide="play" class="w-5 h-5 text-white fill-white"></i>
         </div>
-        <div>
+        <div class="hidden sm:block">
           <h1 class="font-bold text-lg leading-none text-white tracking-tight">OmniPlayer</h1>
-          <span class="text-xs text-slate-400 font-medium">Embeddable HTML5 & HLS Media Suite</span>
+          <span class="text-xs text-slate-400 font-medium">YouTube Search & Media Suite</span>
         </div>
       </div>
 
+      <!-- Integrated YouTube Search Bar in Header -->
+      <div class="flex-1 max-w-xl mx-2">
+        <form id="ytSearchForm" class="relative flex items-center w-full">
+          <div class="relative flex-1 flex items-center">
+            <i data-lucide="youtube" class="w-4 h-4 text-rose-500 absolute left-3.5 pointer-events-none"></i>
+            <input 
+              type="text" 
+              id="ytSearchInput" 
+              placeholder="Search YouTube videos (e.g. lofi, space, coding)..." 
+              autocomplete="off"
+              class="w-full bg-slate-950/90 hover:bg-slate-950 focus:bg-slate-950 text-xs sm:text-sm text-white placeholder-slate-400 pl-10 pr-20 py-2 rounded-l-xl border border-slate-700/80 focus:border-brand-500 focus:outline-none transition"
+            >
+            <button 
+              type="button" 
+              id="btnClearSearch" 
+              class="hidden absolute right-2 text-slate-400 hover:text-white p-1 rounded-md transition" 
+              title="Clear search">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <button 
+            type="submit" 
+            class="bg-slate-800 hover:bg-brand-600 text-slate-200 hover:text-white px-3.5 sm:px-4 py-2 rounded-r-xl border border-l-0 border-slate-700/80 hover:border-brand-500 text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition shrink-0">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span class="hidden md:inline">Search</span>
+          </button>
+        </form>
+      </div>
+
       <!-- Action Controls Header -->
-      <div class="flex items-center space-x-2 sm:space-x-3">
+      <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+        <!-- YouTube API Settings Button -->
+        <button id="btnOpenApiModal" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 border border-slate-700/80 transition" title="YouTube Search API Settings">
+          <i data-lucide="settings-2" class="w-4 h-4 text-rose-400"></i>
+          <span class="hidden 2xl:inline">YT API</span>
+        </button>
+
         <!-- Preset Playlist Dropdown -->
-        <div class="relative group">
-          <select id="videoSelect" class="bg-slate-800 hover:bg-slate-700/80 text-xs sm:text-sm text-slate-200 border border-slate-700/80 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-brand-500 transition appearance-none cursor-pointer">
+        <div class="relative group hidden xl:block">
+          <select id="videoSelect" class="bg-slate-800 hover:bg-slate-700/80 text-xs text-slate-200 border border-slate-700/80 rounded-lg px-2.5 py-2 pr-7 focus:outline-none focus:border-brand-500 transition appearance-none cursor-pointer">
             <option value="big_buck_bunny">Big Buck Bunny (1080p MP4)</option>
             <option value="oceans">Oceans World (1080p MP4)</option>
             <option value="sintel">Sintel Movie (W3C Sample MP4)</option>
@@ -126,37 +182,37 @@
             <option value="yt_lofi">YouTube: Big Buck Bunny 4K</option>
             <option value="hls_stream">HLS Test Stream (.m3u8)</option>
           </select>
-          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"></i>
         </div>
 
         <!-- Local File Load Button -->
-        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 cursor-pointer border border-slate-700/80 transition">
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 cursor-pointer border border-slate-700/80 transition" title="Load Local Video File">
           <i data-lucide="upload" class="w-4 h-4 text-slate-400"></i>
-          <span class="hidden md:inline">Load File</span>
+          <span class="hidden 2xl:inline">File</span>
           <input type="file" id="fileInput" accept="video/*" class="hidden">
         </label>
 
         <!-- Custom Stream URL Modal Trigger -->
-        <button id="btnOpenUrlModal" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 border border-slate-700/80 transition" title="Load custom Stream URL">
+        <button id="btnOpenUrlModal" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 border border-slate-700/80 transition" title="Open URL Modal">
           <i data-lucide="link" class="w-4 h-4 text-slate-400"></i>
-          <span class="hidden md:inline">URL</span>
+          <span class="hidden 2xl:inline">URL</span>
         </button>
 
         <!-- AdShield Ad Blocker Toggle Button -->
-        <button id="btnToggleAdShield" class="bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition" title="AdShield & Privacy Guard Active">
+        <button id="btnToggleAdShield" class="bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition" title="AdShield & Privacy Guard Active">
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-          <span class="hidden lg:inline text-xs font-semibold">AdShield On</span>
+          <span class="hidden lg:inline text-xs font-semibold">AdShield</span>
         </button>
 
         <!-- Embed Generator Button -->
-        <button id="btnOpenEmbedModal" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 shadow-lg shadow-brand-600/25 transition">
+        <button id="btnOpenEmbedModal" class="bg-brand-600 hover:bg-brand-700 text-white p-2 sm:px-3 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 shadow-lg shadow-brand-600/25 transition" title="Get Embed Code">
           <i data-lucide="code" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Get Embed Code</span>
+          <span class="hidden md:inline">Embed</span>
         </button>
 
         <!-- Shortcuts Modal Trigger -->
-        <button id="btnOpenShortcuts" class="text-slate-400 hover:text-slate-200 p-2 rounded-lg transition" title="Keyboard Shortcuts">
-          <i data-lucide="keyboard" class="w-5 h-5"></i>
+        <button id="btnOpenShortcuts" class="text-slate-400 hover:text-slate-200 p-2 rounded-lg transition hidden sm:inline-flex" title="Keyboard Shortcuts">
+          <i data-lucide="keyboard" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
@@ -166,7 +222,156 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6">
     
     <!-- Player Wrapper Column -->
-    <div class="flex-1 flex flex-col gap-4">
+    <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+      <!-- Quick Paste & Play URL Bar + YouTube Search Toggle -->
+      <div id="pasteBarContainer" class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col gap-2.5 border border-slate-800/90 transition-all duration-300">
+        <!-- 3-Step Visual Workflow Guide -->
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 border-b border-slate-800/80 pb-2">
+          <div class="flex items-center flex-wrap gap-1.5 font-medium">
+            <span class="inline-flex items-center space-x-1 text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+              <span>1. Search YouTube</span>
+            </span>
+            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-600"></i>
+            <span class="inline-flex items-center space-x-1 text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+              <span>2. Copy Link from Reply</span>
+            </span>
+            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-600"></i>
+            <span class="inline-flex items-center space-x-1 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <span>3. Paste Link Here</span>
+            </span>
+          </div>
+          <span class="text-[10px] text-slate-500 hidden sm:inline">Auto-loads when pasted</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div class="flex items-center space-x-2 text-xs font-semibold text-slate-200 shrink-0 px-1">
+            <div class="p-1.5 bg-brand-500/15 text-brand-400 rounded-lg">
+              <i data-lucide="clipboard-paste" class="w-4 h-4"></i>
+            </div>
+            <span>Paste YouTube Link into Viewer:</span>
+          </div>
+
+          <div class="flex-1 flex items-center gap-2">
+            <div class="relative flex-1">
+              <input 
+                type="text" 
+                id="quickPasteUrlInput" 
+                placeholder="Paste copied YouTube link here (https://www.youtube.com/watch?v=...)..." 
+                class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-brand-500 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none transition"
+              >
+            </div>
+
+            <button 
+              type="button" 
+              id="btnPasteFromClipboard" 
+              class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition shrink-0"
+              title="Paste link from clipboard">
+              <i data-lucide="clipboard" class="w-3.5 h-3.5 text-brand-400"></i>
+              <span>Paste from Clipboard</span>
+            </button>
+
+            <button 
+              type="button" 
+              id="btnQuickPlayUrl" 
+              class="bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 shadow-md shadow-brand-600/20 transition shrink-0">
+              <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+              <span>Load in Viewer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive YouTube Search Results Drawer / Panel -->
+      <section id="ytSearchResultsPanel" class="hidden glass-panel rounded-2xl p-4 sm:p-5 border border-brand-500/30 shadow-2xl space-y-4 transition-all">
+        <!-- Panel Header & Controls -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="p-2 bg-rose-500/15 text-rose-400 rounded-xl">
+              <i data-lucide="youtube" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center flex-wrap gap-2">
+                <h3 class="font-bold text-sm sm:text-base text-white">Live YouTube Search Replies</h3>
+                <span id="searchSourceBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                  Ready
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">Click <strong class="text-slate-200">Copy Link</strong> on any YouTube reply and paste it into the viewer bar above, or click <strong class="text-slate-200">Play</strong> directly.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 self-end sm:self-center">
+            <button 
+              type="button"
+              id="btnPopupYtSearch" 
+              class="bg-slate-800 hover:bg-rose-600/90 text-slate-200 hover:text-white border border-slate-700 hover:border-rose-500 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition"
+              title="Open YouTube Search Window to browse & copy any link">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              <span>Open YouTube Search Window</span>
+            </button>
+
+            <button 
+              id="btnCloseSearchPanel" 
+              class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+              title="Close search results">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Category Filter Chips -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <button data-cat="all" class="yt-cat-chip active-chip px-3 py-1 rounded-full text-xs font-medium bg-brand-600 text-white transition shrink-0">All Videos</button>
+          <button data-cat="Shop" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0 flex items-center space-x-1">
+            <i data-lucide="shopping-bag" class="w-3 h-3 text-amber-400"></i>
+            <span>Shop</span>
+          </button>
+          <button data-cat="Music & Lofi" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">Music & Lofi</button>
+          <button data-cat="Tech & Coding" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">Tech & Coding</button>
+          <button data-cat="Science & Space" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">Science & Space</button>
+          <button data-cat="Animation & Film" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">Animation & Film</button>
+          <button data-cat="Nature & 4K" class="yt-cat-chip px-3 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0">Nature & 4K</button>
+        </div>
+
+        <!-- Search Status / Loading Indicator -->
+        <div id="ytSearchStatus" class="hidden text-xs text-slate-400 flex items-center space-x-2 py-2">
+          <div class="w-4 h-4 border-2 border-slate-600 border-t-brand-500 rounded-full animate-spin"></div>
+          <span>Querying YouTube Data API v3 search.list...</span>
+        </div>
+
+        <!-- YouTube Data API v3 Key Prompt Banner (shown when no API key is configured) -->
+        <div id="ytApiKeyBanner" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+          <div class="flex items-start sm:items-center space-x-2 text-amber-200">
+            <i data-lucide="key-round" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5 sm:mt-0"></i>
+            <span>
+              <strong>YouTube Data API v3:</strong> Add your Google API key to search all of YouTube directly via <code class="bg-slate-900 px-1.5 py-0.5 rounded text-amber-300">search.list</code>.
+            </span>
+          </div>
+          <div class="flex items-center space-x-1.5 shrink-0">
+            <input type="password" id="inlineYtApiKeyInput" placeholder="Paste AIzaSy... API key" class="bg-slate-950/90 border border-slate-700 focus:border-brand-500 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none w-44">
+            <button type="button" id="btnSaveInlineApiKey" class="bg-brand-600 hover:bg-brand-500 text-white font-semibold px-3 py-1 rounded-lg transition cursor-pointer">
+              Save Key
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Results Grid -->
+        <div id="ytSearchResultsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[420px] overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+
+      <!-- Status Toast Notification (for Copy / Paste feedback) -->
+      <div id="inlineToast" class="hidden bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 px-4 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span id="inlineToastMessage">Link copied to clipboard!</span>
+        </div>
+        <button id="btnCloseToast" class="text-emerald-400 hover:text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
       
       <!-- Video Container Frame -->
       <div id="playerContainer" class="relative group bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/80 aspect-video w-full border border-slate-800 select-none">
@@ -342,13 +547,19 @@
 
       <!-- Video Information & Controls Ribbon -->
       <div class="glass-panel rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 id="videoTitleDisplay" class="text-lg font-bold text-white">Big Buck Bunny</h2>
-          <p id="videoDescDisplay" class="text-xs text-slate-400 mt-0.5">Open source animated feature video sample. 1080p high definition stream.</p>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center space-x-2">
+            <h2 id="videoTitleDisplay" class="text-lg font-bold text-white truncate">Big Buck Bunny</h2>
+            <button id="btnCopyCurrentUrl" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700 flex items-center space-x-1 transition shrink-0" title="Copy current video link">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              <span>Copy Link</span>
+            </button>
+          </div>
+          <p id="videoDescDisplay" class="text-xs text-slate-400 mt-1 truncate">Open source animated feature video sample. 1080p high definition stream.</p>
         </div>
 
         <!-- Color Theme Accent Selector -->
-        <div class="flex items-center space-x-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800 w-full md:w-auto justify-end">
+        <div class="flex items-center space-x-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800 w-full md:w-auto justify-end shrink-0">
           <span class="text-xs text-slate-400 font-medium mr-1">Player Accent:</span>
           <button data-theme="theme-violet" class="theme-btn w-6 h-6 rounded-full bg-violet-600 ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900 transition"></button>
           <button data-theme="theme-emerald" class="theme-btn w-6 h-6 rounded-full bg-emerald-500 hover:scale-110 transition"></button>
@@ -360,8 +571,24 @@
     </div>
 
     <!-- Right Sidebar Playlist & Chapters -->
-    <aside class="w-full lg:w-80 flex flex-col gap-4">
+    <aside class="w-full lg:w-80 flex flex-col gap-4 shrink-0">
       
+      <!-- Browse YouTube Catalog Quick Card -->
+      <div class="glass-panel rounded-2xl p-4 flex items-center justify-between gap-3 border border-rose-500/20 bg-gradient-to-r from-slate-900/90 to-rose-950/20">
+        <div class="flex items-center space-x-2.5">
+          <div class="p-2 bg-rose-500/20 text-rose-400 rounded-xl">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Find YouTube Videos</h3>
+            <p class="text-[11px] text-slate-400">Browse & copy links to paste</p>
+          </div>
+        </div>
+        <button id="btnOpenBrowseCatalog" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shrink-0">
+          Browse
+        </button>
+      </div>
+
       <!-- Watch Memory & Saved Progress Card -->
       <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
         <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
@@ -383,53 +610,70 @@
 
       <!-- Media Quick Switcher Card -->
       <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
-        <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-          <i data-lucide="film" class="w-4 h-4 text-accent"></i>
-          <span>Sample Library</span>
-        </h3>
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+            <i data-lucide="film" class="w-4 h-4 text-accent"></i>
+            <span>Sample Library</span>
+          </h3>
+          <span id="sampleLibraryCount" class="text-[10px] text-slate-400 font-mono">6 items</span>
+        </div>
+
+        <!-- Sample Library Name & File Extension Filter -->
+        <div class="relative">
+          <i data-lucide="filter" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input 
+            type="text" 
+            id="sampleLibraryFilterInput" 
+            placeholder="Filter by name or .mp4, .m3u8, .webm..." 
+            class="w-full bg-slate-950/90 border border-slate-800 focus:border-brand-500 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition"
+          >
+          <button type="button" id="btnClearLibraryFilter" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        </div>
 
         <div class="space-y-2" id="playlistItems">
           <!-- Item 1: Big Buck Bunny (HTML5 MP4) -->
-          <div data-vid="big_buck_bunny" class="playlist-item active-playlist flex items-center space-x-3 p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 cursor-pointer border border-accent/40 transition">
+          <div data-vid="big_buck_bunny" data-search="big buck bunny .mp4 mp4 direct stream 1080p" class="playlist-item active-playlist flex items-center space-x-3 p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 cursor-pointer border border-accent/40 transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Big Buck Bunny">
-              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">.MP4</span>
               <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <h4 class="text-xs font-semibold text-white truncate">Big Buck Bunny</h4>
-              <p class="text-[11px] text-slate-400">1080p MP4 • Direct Stream</p>
+              <h4 class="text-xs font-semibold text-white truncate">Big Buck Bunny.mp4</h4>
+              <p class="text-[11px] text-slate-400">1080p .mp4 • Direct Stream</p>
             </div>
           </div>
 
           <!-- Item 2: Oceans World (HTML5 MP4) -->
-          <div data-vid="oceans" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+          <div data-vid="oceans" data-search="oceans world .mp4 mp4 nature documentary" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Oceans">
-              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">.MP4</span>
               <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <h4 class="text-xs font-semibold text-slate-200 truncate">Oceans World</h4>
-              <p class="text-[11px] text-slate-400">Nature Documentary</p>
+              <h4 class="text-xs font-semibold text-slate-200 truncate">Oceans World.mp4</h4>
+              <p class="text-[11px] text-slate-400">Nature Documentary (.mp4)</p>
             </div>
           </div>
 
           <!-- Item 3: Sintel Open Movie (HTML5 MP4) -->
-          <div data-vid="sintel" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+          <div data-vid="sintel" data-search="sintel movie trailer .mp4 mp4 w3c sample" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Sintel Trailer">
-              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">.MP4</span>
               <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <h4 class="text-xs font-semibold text-slate-200 truncate">Sintel Movie Trailer</h4>
-              <p class="text-[11px] text-slate-400">W3C Video Sample</p>
+              <h4 class="text-xs font-semibold text-slate-200 truncate">Sintel Trailer.mp4</h4>
+              <p class="text-[11px] text-slate-400">W3C Video Sample (.mp4)</p>
             </div>
           </div>
 
           <!-- Item 4: YouTube Playlist Item 1 -->
-          <div data-vid="yt_tears_of_steel" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+          <div data-vid="yt_tears_of_steel" data-search="youtube api demo embed stream" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://img.youtube.com/vi/M7lc1UVf-VE/hqdefault.jpg" class="w-full h-full object-cover" alt="YouTube API Demo">
               <span class="absolute top-1 left-1 bg-red-600 text-[8px] font-bold text-white px-1 rounded">YT</span>
@@ -442,7 +686,7 @@
           </div>
 
           <!-- Item 5: YouTube Playlist Item 2 -->
-          <div data-vid="yt_lofi" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+          <div data-vid="yt_lofi" data-search="big buck bunny yt youtube stream 4k" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://img.youtube.com/vi/EngW7tLk6R8/hqdefault.jpg" class="w-full h-full object-cover" alt="Big Buck Bunny YT">
               <span class="absolute top-1 left-1 bg-red-600 text-[8px] font-bold text-white px-1 rounded">YT</span>
@@ -455,15 +699,15 @@
           </div>
 
           <!-- Item 6: HLS Stream -->
-          <div data-vid="hls_stream" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+          <div data-vid="hls_stream" data-search="hls live stream .m3u8 m3u8 adaptive" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
             <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
               <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="HLS Stream">
-              <span class="absolute top-1 left-1 bg-rose-600 text-[8px] font-bold text-white px-1 rounded">LIVE</span>
+              <span class="absolute top-1 left-1 bg-rose-600 text-[8px] font-bold text-white px-1 rounded">.M3U8</span>
               <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <h4 class="text-xs font-semibold text-slate-200 truncate">HLS Live Stream</h4>
-              <p class="text-[11px] text-slate-400">m3u8 Adaptive Stream</p>
+              <h4 class="text-xs font-semibold text-slate-200 truncate">HLS Live Stream.m3u8</h4>
+              <p class="text-[11px] text-slate-400">.m3u8 Adaptive Stream</p>
             </div>
           </div>
         </div>
@@ -609,14 +853,49 @@
     </div>
   </div>
 
+  <!-- MODAL 4: YouTube Search API Settings Modal -->
+  <div id="ytApiModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-base flex items-center space-x-2">
+          <i data-lucide="key-round" class="w-4 h-4 text-rose-400"></i>
+          <span>YouTube Live Search Settings</span>
+        </h3>
+        <button id="btnCloseApiModal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        OmniPlayer automatically queries multiple public YouTube search relays in parallel. If your network blocks public relays, you can optionally add your own <strong>YouTube Data API v3 Key</strong> below for direct Google API replies.
+      </p>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-slate-400">YouTube Data API v3 Key (Optional):</label>
+        <input type="password" id="ytApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+      </div>
+
+      <div class="flex items-center gap-2 pt-1">
+        <button id="btnSaveYtApiKey" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg text-xs transition">
+          Save API Key
+        </button>
+        <button id="btnClearYtApiKey" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3 py-2 rounded-lg text-xs border border-slate-700 transition">
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Video Sample Catalog
     const VIDEO_SOURCES = {
       big_buck_bunny: {
         type: "html5",
-        title: "Big Buck Bunny",
-        desc: "Open-source animated feature film by Blender Foundation. High definition direct MP4 stream.",
+        ext: ".mp4",
+        title: "Big Buck Bunny.mp4",
+        desc: "Open-source animated feature film by Blender Foundation. High definition direct .mp4 stream.",
         url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        thumbnail: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=480&auto=format&fit=crop&q=60",
         subtitles: [
           { start: 1, end: 4, text: "Welcome to Big Buck Bunny!" },
           { start: 5, end: 9, text: "A large and lovable rabbit awakens on a sunny morning..." }
@@ -624,9 +903,11 @@
       },
       oceans: {
         type: "html5",
-        title: "Oceans World",
-        desc: "High definition ocean wildlife sample stream with CORS enabled.",
+        ext: ".mp4",
+        title: "Oceans World.mp4",
+        desc: "High definition ocean wildlife sample .mp4 stream with CORS enabled.",
         url: "https://vjs.zencdn.net/v/oceans.mp4",
+        thumbnail: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=480&auto=format&fit=crop&q=60",
         subtitles: [
           { start: 1, end: 5, text: "Explore the deep mystery of blue oceans..." },
           { start: 6, end: 12, text: "Home to millions of breathtaking aquatic species." }
@@ -634,9 +915,11 @@
       },
       sintel: {
         type: "html5",
-        title: "Sintel Open Movie Trailer",
-        desc: "Official W3C sample video stream with standard cross-origin headers.",
+        ext: ".mp4",
+        title: "Sintel Open Movie Trailer.mp4",
+        desc: "Official W3C sample .mp4 video stream with standard cross-origin headers.",
         url: "https://media.w3.org/2010/05/sintel/trailer.mp4",
+        thumbnail: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=480&auto=format&fit=crop&q=60",
         subtitles: [
           { start: 1, end: 4, text: "Sintel - An open source animated adventure." }
         ]
@@ -661,12 +944,197 @@
       },
       hls_stream: {
         type: "hls",
-        title: "HLS Live Stream Demo",
+        ext: ".m3u8",
+        title: "HLS Live Stream Demo.m3u8",
         desc: "HTTP Live Streaming (.m3u8 format) parsed via Hls.js engine.",
         url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+        thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=480&auto=format&fit=crop&q=60",
         subtitles: []
       }
     };
+
+    // Curated YouTube Video Catalog across all categories (including Shop & file format showcases)
+    const CURATED_YT_CATALOG = [
+      {
+        id: "M7lc1UVf-VE",
+        title: "YouTube Developers Live: Embedded Player API Demo",
+        channel: "Google for Developers",
+        category: "Tech & Coding",
+        duration: "22:15",
+        keywords: "coding programming javascript api web development google"
+      },
+      {
+        id: "rfscVS0vtbw",
+        title: "Learn Python - Full Course for Beginners [Tutorial]",
+        channel: "freeCodeCamp.org",
+        category: "Tech & Coding",
+        duration: "4:26:52",
+        keywords: "python tutorial coding programming software engineering"
+      },
+      {
+        id: "PkZNo7MFNFg",
+        title: "Learn JavaScript - Full Course for Beginners",
+        channel: "freeCodeCamp.org",
+        category: "Tech & Coding",
+        duration: "3:26:43",
+        keywords: "javascript js web dev frontend coding tutorial"
+      },
+      {
+        id: "ysz5S6PUM-U",
+        title: "Tech Gear & Desk Setup Shopping Guide - Best Gadgets Unboxing",
+        channel: "TechShop Reviews",
+        category: "Shop",
+        duration: "14:22",
+        keywords: "shop shopping gear desk setup gadgets review unboxing laptop monitor keyboard mouse"
+      },
+      {
+        id: "aqz-KE-bpKQ",
+        title: "4K Camera & Studio Equipment Shop Tour (.mp4 / .mov Workflow)",
+        channel: "Creator Storefront",
+        category: "Shop",
+        duration: "11:08",
+        keywords: "shop camera lens studio gear review unboxing .mp4 .mov .mkv video editing"
+      },
+      {
+        id: "jNQXAC9IVRw",
+        title: "Me at the zoo - Classic Archive Video (.mp4 / .flv Heritage)",
+        channel: "jawed",
+        category: "Shop",
+        duration: "0:19",
+        keywords: "shop classic zoo archive .mp4 .flv .webm sample video"
+      },
+      {
+        id: "9bZkp7q19f0",
+        title: "Smart Home Tech & Audio Headphones Buyer's Shop Guide",
+        channel: "AudioGear Shop",
+        category: "Shop",
+        duration: "16:40",
+        keywords: "shop headphones audio smart home speaker buyer guide unboxing deals"
+      },
+      {
+        id: "dQw4w9WgXcQ",
+        title: "Retro Vinyl & Music Store Merch Shop Showcase",
+        channel: "Vinyl & Merch Shop",
+        category: "Shop",
+        duration: "3:33",
+        keywords: "shop vinyl merch music store collection apparel"
+      },
+      {
+        id: "jfKfPfyJRdk",
+        title: "lofi hip hop radio 📚 - beats to relax/study to",
+        channel: "Lofi Girl",
+        category: "Music & Lofi",
+        duration: "LIVE",
+        keywords: "lofi chill study beats music relax hip hop radio .m3u8"
+      },
+      {
+        id: "5qap5aO4i9A",
+        title: "Synthwave Radio 🌌 - beats to chill/game to",
+        channel: "Lofi Girl",
+        category: "Music & Lofi",
+        duration: "LIVE",
+        keywords: "synthwave retrowave electronic chill gaming music"
+      },
+      {
+        id: "DWcJFNfaw9c",
+        title: "Coffee Shop Radio ☕ - 24/7 lofi & jazzhop beats",
+        channel: "STEEZYASFUCK",
+        category: "Music & Lofi",
+        duration: "LIVE",
+        keywords: "jazzhop coffee shop lofi chill instrumental music"
+      },
+      {
+        id: "86YLFOog4GM",
+        title: "NASA Live: Official Stream of NASA TV & ISS Earth Views (.m3u8)",
+        channel: "NASA",
+        category: "Science & Space",
+        duration: "LIVE",
+        keywords: "space nasa iss earth astronomy science universe .m3u8"
+      },
+      {
+        id: "libKVRa01L8",
+        title: "Solar System 101 | National Geographic",
+        channel: "National Geographic",
+        category: "Science & Space",
+        duration: "4:11",
+        keywords: "planets solar system space astronomy documentary"
+      },
+      {
+        id: "uD4izuDMUQA",
+        title: "TIMELAPSE OF THE FUTURE: A Journey to the End of Time (4K)",
+        channel: "melodysheep",
+        category: "Science & Space",
+        duration: "29:21",
+        keywords: "cosmos universe future time black holes space science"
+      },
+      {
+        id: "EngW7tLk6R8",
+        title: "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film (.mp4)",
+        channel: "Blender",
+        category: "Animation & Film",
+        duration: "10:35",
+        keywords: "animation 3d blender short film movie bunny .mp4 .webm .mkv"
+      },
+      {
+        id: "eRsGyueVLvQ",
+        title: "Sintel - Open Movie by Blender Foundation (.mp4)",
+        channel: "Blender",
+        category: "Animation & Film",
+        duration: "14:48",
+        keywords: "sintel fantasy dragon animation film blender .mp4"
+      },
+      {
+        id: "R6MlUcmOul8",
+        title: "Tears of Steel - Blender Sci-Fi Open Movie (.webm / .mp4)",
+        channel: "Blender",
+        category: "Animation & Film",
+        duration: "12:14",
+        keywords: "sci-fi vfx short film movie blender action .webm .mp4"
+      },
+      {
+        id: "LXb3EKWsInQ",
+        title: "COSTA RICA IN 4K 60fps HDR (Ultra HD)",
+        channel: "Jacob + Katie Schwarz",
+        category: "Nature & 4K",
+        duration: "5:14",
+        keywords: "nature 4k hdr rainforest wildlife travel scenic .mp4"
+      },
+      {
+        id: "6v2L2UGZJAM",
+        title: "Planet Earth III | 4K Ultra HD Nature & Wildlife",
+        channel: "BBC Earth",
+        category: "Nature & 4K",
+        duration: "3:42",
+        keywords: "ocean wildlife earth nature 4k documentary"
+      },
+      {
+        id: "Bey4XXJAqS8",
+        title: "4K Tropical Beach & Coral Reefs Relaxation Film",
+        channel: "Scenic Relaxation",
+        category: "Nature & 4K",
+        duration: "1:02:18",
+        keywords: "beach ocean coral reef 4k relaxing nature"
+      }
+    ];
+
+    // Supported video file extensions for extension-based search & direct playback
+    const SUPPORTED_VIDEO_EXTENSIONS = ['.mp4', '.m3u8', '.webm', '.mov', '.mkv', '.avi', '.flv', '.ogg', '.m4v'];
+
+    // Public Piped & Invidious JSON search endpoints (queried in parallel with fast timeout & failover)
+    const PIPED_SEARCH_ENDPOINTS = [
+      { name: "Piped Kavin", url: "https://pipedapi.kavin.rocks/search?filter=videos&q=" },
+      { name: "Piped Tokhmi", url: "https://pipedapi.tokhmi.xyz/search?filter=videos&q=" },
+      { name: "Piped Adminforge", url: "https://pipedapi.adminforge.de/search?filter=videos&q=" },
+      { name: "Piped Duper", url: "https://pipedapi.duper.live/search?filter=videos&q=" }
+    ];
+
+    const INVIDIOUS_SEARCH_ENDPOINTS = [
+      { name: "Invidious Nadeko", url: "https://inv.nadeko.net/api/v1/search?type=video&q=" },
+      { name: "Invidious NerdVPN", url: "https://invidious.nerdvpn.de/api/v1/search?type=video&q=" },
+      { name: "Invidious PrivacyRedirect", url: "https://invidious.privacyredirect.com/api/v1/search?type=video&q=" }
+    ];
+
+    const YT_API_KEY_STORAGE = 'omniplayer_yt_api_v3_key';
 
     const video = document.getElementById('mainVideo');
     const ytPlayerWrapper = document.getElementById('ytPlayerWrapper');
@@ -716,9 +1184,12 @@
     let pendingYtId = null;
     let currentKey = 'big_buck_bunny';
     let currentYtId = null;
+    let currentLoadedUrl = VIDEO_SOURCES.big_buck_bunny.url;
     let controlsTimeout = null;
     let subtitlesEnabled = false;
     let currentSubtitles = [];
+    let activeSearchCategory = 'all';
+    let toastTimeout = null;
 
     // Safe Storage Wrapper (Prevents crashes in sandboxed iframe environments like Google Sites)
     const SafeStorage = {
@@ -746,24 +1217,76 @@
       }
     };
 
+    // Toast notification helper
+    function showInlineToast(message) {
+      const toast = document.getElementById('inlineToast');
+      const msgEl = document.getElementById('inlineToastMessage');
+      if (!toast || !msgEl) return;
+      msgEl.textContent = message;
+      toast.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    // Reliable Clipboard Copy Helper
+    async function copyTextToClipboard(text) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (err) {}
+
+      // Fallback using temporary textarea & execCommand
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+      } catch (err) {
+        return false;
+      }
+    }
+
     // AdShield & Ad-Blocker Engine
     let adShieldEnabled = true;
     let blockedAdsCount = 0;
+    let allowNextUserPopup = false;
 
     function initAdShield() {
-      // Intercept popup attempts commonly triggered by embedded ad networks
       try {
         const originalOpen = window.open;
         window.open = function(url, target, features) {
-          if (adShieldEnabled) {
+          if (adShieldEnabled && !allowNextUserPopup) {
             blockedAdsCount++;
             updateAdShieldUI();
-            console.log("OmniPlayer AdShield blocked an unrequested popup:", url);
             return null;
           }
+          allowNextUserPopup = false;
           return originalOpen.apply(window, arguments);
         };
       } catch (e) {}
+    }
+
+    function openYouTubeSearchWindow(query) {
+      const q = (query || '').trim();
+      const targetUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q || 'trending videos')}`;
+      allowNextUserPopup = true;
+      const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      allowNextUserPopup = false;
+      if (!win) {
+        showInlineToast('Popup blocked by browser sandbox — copy a link from the search grid below or open YouTube in a new tab.');
+      }
     }
 
     function sanitizeAdFreeUrl(rawUrl) {
@@ -771,14 +1294,10 @@
       if (!adShieldEnabled) return rawUrl;
 
       try {
-        let cleanUrl = rawUrl;
-        // Strip common ad tracking query parameters
         const urlObj = new URL(rawUrl);
         const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'gclid', 'fbclid', 'si', 'feature'];
         trackingParams.forEach(param => urlObj.searchParams.delete(param));
-        cleanUrl = urlObj.toString();
-
-        return cleanUrl;
+        return urlObj.toString();
       } catch (e) {
         return rawUrl;
       }
@@ -793,10 +1312,10 @@
       const btn = document.getElementById('btnToggleAdShield');
       if (!btn) return;
       if (adShieldEnabled) {
-        btn.className = "bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition";
-        btn.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i><span class="hidden lg:inline text-xs font-semibold">AdShield On</span>`;
+        btn.className = "bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition";
+        btn.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i><span class="hidden lg:inline text-xs font-semibold">AdShield</span>`;
       } else {
-        btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700/80 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition";
+        btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700/80 p-2 sm:px-2.5 sm:py-2 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition";
         btn.innerHTML = `<i data-lucide="shield-off" class="w-4 h-4 text-slate-400"></i><span class="hidden lg:inline text-xs font-semibold">AdShield Off</span>`;
       }
       if (window.lucide) lucide.createIcons();
@@ -804,7 +1323,6 @@
 
     const PROGRESS_STORAGE_KEY = 'omniplayer_video_memory_v1';
     let pendingResumeTime = 0;
-    let progressSaveTimer = null;
 
     function getAllSavedProgress() {
       try {
@@ -849,7 +1367,6 @@
         resumeBanner.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
         resumeBanner.classList.add('opacity-100', 'translate-y-0');
 
-        // Auto dismiss resume toast after 8 seconds
         setTimeout(() => hideResumeBanner(), 8000);
       } else {
         hideResumeBanner();
@@ -882,8 +1399,8 @@
         return `
           <div class="p-2 rounded-xl bg-slate-900/80 border ${isCurrent ? 'border-brand-500/50' : 'border-slate-800'} hover:border-brand-500/30 transition flex flex-col gap-1">
             <div class="flex items-center justify-between text-slate-200">
-              <span class="font-semibold truncate max-w-[140px] text-[11px]">${item.title}</span>
-              <button onclick="jumpToMemoryKey('${item.key}', ${item.timestamp})" class="text-[10px] text-brand-400 hover:text-brand-300 font-medium px-1.5 py-0.5 bg-brand-500/10 rounded transition cursor-pointer">
+              <span class="font-semibold truncate max-w-[140px] text-[11px]">${escapeHtml(item.title)}</span>
+              <button onclick="jumpToMemoryKey('${escapeHtml(item.key)}', ${item.timestamp})" class="text-[10px] text-brand-400 hover:text-brand-300 font-medium px-1.5 py-0.5 bg-brand-500/10 rounded transition cursor-pointer">
                 Resume ${formatTime(item.timestamp)}
               </button>
             </div>
@@ -896,7 +1413,10 @@
     }
 
     window.jumpToMemoryKey = function(key, timestamp) {
-      if (key !== currentKey) {
+      if (key.startsWith('yt_custom_')) {
+        const ytId = key.replace('yt_custom_', '');
+        loadYouTubeVideo(ytId);
+      } else if (key !== currentKey) {
         loadVideoKey(key);
       }
       setTimeout(() => {
@@ -911,14 +1431,608 @@
       hideResumeBanner();
     }
 
-    // Helper to parse YouTube Video ID
+    // Helper to parse YouTube Video ID (supports watch, youtu.be, shorts, embed, live, or bare 11-char ID)
     function extractYouTubeId(url) {
       if (!url) return null;
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : null;
+      const trimmed = url.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+        return trimmed;
+      }
+      const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = trimmed.match(regExp);
+      return (match && match[1] && match[1].length === 11) ? match[1] : null;
     }
 
+    // Detect if a string is a direct video file URL (ending in .mp4, .m3u8, .webm, etc.)
+    function isDirectVideoFileUrl(str) {
+      if (!str) return false;
+      const trimmed = str.trim();
+      if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('blob:')) return false;
+      try {
+        const pathname = new URL(trimmed).pathname.toLowerCase();
+        return SUPPORTED_VIDEO_EXTENSIONS.some(ext => pathname.endsWith(ext));
+      } catch (e) {
+        const lower = trimmed.toLowerCase().split('?')[0];
+        return SUPPORTED_VIDEO_EXTENSIONS.some(ext => lower.endsWith(ext));
+      }
+    }
+
+    // Detect if a search query is targeting a file extension (e.g., ".mp4", "mp4", ".m3u8", "webm")
+    function normalizeExtensionQuery(query) {
+      if (!query) return null;
+      const cleaned = query.trim().toLowerCase();
+      const withDot = cleaned.startsWith('.') ? cleaned : `.${cleaned}`;
+      return SUPPORTED_VIDEO_EXTENSIONS.includes(withDot) ? withDot : null;
+    }
+
+    // Filter the Sample Library sidebar by word in name or file extension
+    function filterSampleLibrarySidebar(rawQuery) {
+      const q = (rawQuery || '').trim().toLowerCase();
+      const items = document.querySelectorAll('#playlistItems .playlist-item');
+      const countEl = document.getElementById('sampleLibraryCount');
+      let visibleCount = 0;
+
+      items.forEach(item => {
+        const searchBlob = (item.dataset.search || item.textContent || '').toLowerCase();
+        const matches = !q || searchBlob.includes(q) || (q.startsWith('.') && searchBlob.includes(q.slice(1)));
+        if (matches) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      if (countEl) {
+        countEl.textContent = `${visibleCount} of ${items.length}`;
+      }
+    }
+
+    // Build matching Sample Library items formatted as search result cards for file extension / name search
+    function getMatchingLocalSourceCards(query, category) {
+      const q = (query || '').trim().toLowerCase();
+      if (!q) return [];
+      const extMatch = normalizeExtensionQuery(q);
+
+      // Only show local file-extension/sample items when in 'all' or when explicitly searching by extension
+      if (category !== 'all' && !extMatch) return [];
+
+      return Object.entries(VIDEO_SOURCES)
+        .filter(([key, src]) => src.type !== 'youtube')
+        .filter(([key, src]) => {
+          const haystack = `${src.title} ${src.desc} ${src.url} ${src.ext || ''}`.toLowerCase();
+          if (extMatch) {
+            return haystack.includes(extMatch) || haystack.includes(extMatch.slice(1));
+          }
+          return haystack.includes(q);
+        })
+        .map(([key, src]) => ({
+          isLocalSource: true,
+          sourceKey: key,
+          id: key,
+          watchUrl: src.url,
+          title: src.title,
+          channel: `Sample Library • ${(src.ext || src.type).toUpperCase()}`,
+          category: 'Sample Library',
+          duration: (src.ext || src.type).toUpperCase(),
+          thumbnail: src.thumbnail || 'https://placehold.co/480x270/0f172a/10b981?text=Video+Stream'
+        }));
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // ==========================================
+    // YOUTUBE SEARCH & RESULTS PANEL ENGINE
+    // ==========================================
+    function updateYtApiKeyBannerVisibility() {
+      const banner = document.getElementById('ytApiKeyBanner');
+      if (!banner) return;
+      const savedKey = (SafeStorage.getItem(YT_API_KEY_STORAGE) || '').trim();
+      if (savedKey) {
+        banner.classList.add('hidden');
+      } else {
+        banner.classList.remove('hidden');
+      }
+    }
+
+    function openYouTubeSearchPanel(initialQuery = '') {
+      const panel = document.getElementById('ytSearchResultsPanel');
+      if (panel) {
+        panel.classList.remove('hidden');
+      }
+      updateYtApiKeyBannerVisibility();
+      performYouTubeSearch(initialQuery);
+    }
+
+    function closeYouTubeSearchPanel() {
+      const panel = document.getElementById('ytSearchResultsPanel');
+      if (panel) {
+        panel.classList.add('hidden');
+      }
+    }
+
+    function formatIso8601Duration(iso) {
+      if (!iso) return 'HD';
+      const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return 'HD';
+      const hrs = parseInt(match[1] || '0', 10);
+      const mins = parseInt(match[2] || '0', 10);
+      const secs = parseInt(match[3] || '0', 10);
+      if (hrs > 0) {
+        return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      }
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function formatDurationSeconds(sec) {
+      if (!sec || sec <= 0) return 'LIVE';
+      const hrs = Math.floor(sec / 3600);
+      const mins = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      if (hrs > 0) {
+        return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${s < 10 ? '0' : ''}${s}`;
+      }
+      return `${mins}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Official YouTube Data API v3 search.list + videos.list duration enrichment
+    async function fetchYouTubeDataApiV3(query, apiKey) {
+      const encodedQuery = encodeURIComponent(query.trim());
+      const searchEndpoint = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&q=${encodedQuery}&key=${encodeURIComponent(apiKey)}`;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+
+      try {
+        const res = await fetch(searchEndpoint, { signal: controller.signal });
+        clearTimeout(timer);
+        const data = await res.json();
+
+        if (!res.ok) {
+          const errMsg = (data && data.error && data.error.message) ? data.error.message : `HTTP ${res.status}`;
+          return { error: errMsg, items: [] };
+        }
+
+        const rawItems = Array.isArray(data.items) ? data.items : [];
+        const videoIds = rawItems
+          .map(item => item.id && item.id.videoId)
+          .filter(id => id && id.length === 11);
+
+        // Fetch exact durations via YouTube Data API v3 videos.list endpoint
+        const durationMap = {};
+        if (videoIds.length > 0) {
+          try {
+            const videosEndpoint = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}&key=${encodeURIComponent(apiKey)}`;
+            const vRes = await fetch(videosEndpoint);
+            if (vRes.ok) {
+              const vData = await vRes.json();
+              (vData.items || []).forEach(vItem => {
+                if (vItem.id && vItem.contentDetails && vItem.contentDetails.duration) {
+                  durationMap[vItem.id] = formatIso8601Duration(vItem.contentDetails.duration);
+                }
+              });
+            }
+          } catch (e) {}
+        }
+
+        // Decode HTML entities returned by YouTube Data API v3 snippet titles
+        const decodeEntity = (str) => {
+          const txt = document.createElement('textarea');
+          txt.innerHTML = str || '';
+          return txt.value;
+        };
+
+        const mappedItems = rawItems
+          .map(item => {
+            const id = item.id && item.id.videoId;
+            const snip = item.snippet || {};
+            return {
+              id,
+              title: decodeEntity(snip.title) || 'YouTube Video',
+              channel: decodeEntity(snip.channelTitle) || 'YouTube Channel',
+              category: 'YouTube Data API v3',
+              duration: snip.liveBroadcastContent === 'live' ? 'LIVE' : (durationMap[id] || 'HD'),
+              thumbnail: (snip.thumbnails && (snip.thumbnails.high?.url || snip.thumbnails.medium?.url || snip.thumbnails.default?.url)) || `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+            };
+          })
+          .filter(v => v.id && v.id.length === 11);
+
+        return { sourceLabel: 'YouTube Data API v3', items: mappedItems };
+      } catch (err) {
+        clearTimeout(timer);
+        return { error: err.message || 'Network error', items: [] };
+      }
+    }
+
+    // Query YouTube Data API v3 search.list first, then public Piped & Invidious relays as fallback
+    async function fetchLiveSearchResults(query) {
+      if (!query || query.trim().length < 2) return null;
+      const encoded = encodeURIComponent(query.trim());
+
+      // 1. Primary: Official YouTube Data API v3 search.list endpoint
+      const savedApiKey = (SafeStorage.getItem(YT_API_KEY_STORAGE) || '').trim();
+      if (savedApiKey) {
+        const apiResult = await fetchYouTubeDataApiV3(query, savedApiKey);
+        if (apiResult.error) {
+          showInlineToast(`YouTube API v3 notice: ${apiResult.error}`);
+        } else if (apiResult.items && apiResult.items.length > 0) {
+          return apiResult;
+        }
+      }
+
+      // 2. Fallback: Public Piped search endpoints
+      for (const endpoint of PIPED_SEARCH_ENDPOINTS) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2800);
+        try {
+          const res = await fetch(endpoint.url + encoded, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const items = (data.items || data || []).filter(item => item.type === 'stream' && item.url);
+          if (items.length > 0) {
+            return {
+              sourceLabel: endpoint.name,
+              items: items.slice(0, 12).map(item => {
+                const id = extractYouTubeId(item.url) || item.url.replace('/watch?v=', '');
+                return {
+                  id,
+                  title: item.title || 'YouTube Video',
+                  channel: item.uploaderName || 'YouTube Channel',
+                  category: 'Live Search',
+                  duration: formatDurationSeconds(item.duration),
+                  thumbnail: item.thumbnail || `https://img.youtube.com/vi/${id}/hqdefault.jpg`
+                };
+              }).filter(v => v.id && v.id.length === 11)
+            };
+          }
+        } catch (err) {
+          clearTimeout(timer);
+        }
+      }
+
+      // 3. Secondary Fallback: Public Invidious search endpoints
+      for (const endpoint of INVIDIOUS_SEARCH_ENDPOINTS) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2800);
+        try {
+          const res = await fetch(endpoint.url + encoded, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const items = (Array.isArray(data) ? data : []).filter(item => item.type === 'video' && item.videoId);
+          if (items.length > 0) {
+            return {
+              sourceLabel: endpoint.name,
+              items: items.slice(0, 12).map(item => ({
+                id: item.videoId,
+                title: item.title || 'YouTube Video',
+                channel: item.author || 'YouTube Channel',
+                category: 'Live Search',
+                duration: item.liveNow ? 'LIVE' : formatDurationSeconds(item.lengthSeconds),
+                thumbnail: `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`
+              })).filter(v => v.id && v.id.length === 11)
+            };
+          }
+        } catch (err) {
+          clearTimeout(timer);
+        }
+      }
+
+      return null;
+    }
+
+    // Filter curated YouTube catalog by category and word-in-name / file extension
+    function filterCuratedCatalog(query, category) {
+      const q = (query || '').trim().toLowerCase();
+      return CURATED_YT_CATALOG.filter(item => {
+        const matchesCat = category === 'all' || item.category === category;
+        if (!matchesCat) return false;
+        if (!q) return true;
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.channel.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q) ||
+          (item.keywords && item.keywords.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    // Main search orchestrator: handles direct URLs, file extensions, Shop/category filters, and YouTube Data API v3 search.list
+    async function performYouTubeSearch(query) {
+      const q = (query || '').trim();
+      const statusEl = document.getElementById('ytSearchStatus');
+      const badgeEl = document.getElementById('searchSourceBadge');
+
+      // Sync Sample Library filter sidebar with search input
+      const libFilterInput = document.getElementById('sampleLibraryFilterInput');
+      if (libFilterInput && libFilterInput.value !== q) {
+        libFilterInput.value = q;
+      }
+      filterSampleLibrarySidebar(q);
+
+      // 1. Check if user entered a direct YouTube URL or 11-char video ID
+      const directYtId = extractYouTubeId(q);
+      if (directYtId) {
+        if (badgeEl) badgeEl.textContent = 'Direct YouTube Match';
+        if (statusEl) statusEl.classList.add('hidden');
+        renderSearchResultsGrid([{
+          id: directYtId,
+          title: `YouTube Video (${directYtId})`,
+          channel: 'Direct YouTube Link',
+          category: 'Matched URL',
+          duration: 'HD',
+          thumbnail: `https://img.youtube.com/vi/${directYtId}/hqdefault.jpg`
+        }], q);
+        return;
+      }
+
+      // 2. Check if user entered a direct video file URL (.mp4, .m3u8, .webm, etc.)
+      if (isDirectVideoFileUrl(q)) {
+        const fileName = q.split('/').pop().split('?')[0] || 'Direct Video File';
+        const extMatch = SUPPORTED_VIDEO_EXTENSIONS.find(ext => fileName.toLowerCase().endsWith(ext)) || '.mp4';
+        if (badgeEl) badgeEl.textContent = `Direct ${extMatch.toUpperCase()} File`;
+        if (statusEl) statusEl.classList.add('hidden');
+        renderSearchResultsGrid([{
+          isDirectFileUrl: true,
+          watchUrl: q,
+          id: 'direct_file',
+          title: fileName,
+          channel: `Direct File Stream (${extMatch})`,
+          category: 'Direct File',
+          duration: extMatch.toUpperCase(),
+          thumbnail: 'https://placehold.co/480x270/0f172a/10b981?text=' + encodeURIComponent(extMatch.toUpperCase() + '+File')
+        }], q);
+        return;
+      }
+
+      // 3. Immediate local & curated results (including Shop items and file extension matches)
+      const localMatches = getMatchingLocalSourceCards(q, activeSearchCategory);
+      const curatedMatches = filterCuratedCatalog(q, activeSearchCategory);
+      const combinedInitial = [...localMatches, ...curatedMatches];
+
+      if (badgeEl) {
+        badgeEl.textContent = q
+          ? `Searching "${q}"...`
+          : (activeSearchCategory === 'all' ? 'Curated Library' : `${activeSearchCategory} (${curatedMatches.length})`);
+      }
+      renderSearchResultsGrid(combinedInitial, q);
+
+      // 4. Query YouTube Data API v3 search.list (with fallback relays) when a search term is provided
+      const effectiveQuery = activeSearchCategory === 'Shop' && q && !q.toLowerCase().includes('shop')
+        ? `${q} shop`
+        : (q || (activeSearchCategory !== 'all' ? activeSearchCategory : ''));
+
+      if (effectiveQuery.length >= 2 && !normalizeExtensionQuery(q)) {
+        if (statusEl) statusEl.classList.remove('hidden');
+        const liveResponse = await fetchLiveSearchResults(effectiveQuery);
+        if (statusEl) statusEl.classList.add('hidden');
+
+        if (liveResponse && liveResponse.items && liveResponse.items.length > 0) {
+          // If Shop category is selected, prioritize items containing the searched word in the name
+          const qLower = q.toLowerCase();
+          const filteredLive = qLower
+            ? liveResponse.items.filter(item => item.title.toLowerCase().includes(qLower) || item.channel.toLowerCase().includes(qLower))
+            : liveResponse.items;
+          const finalLive = filteredLive.length > 0 ? filteredLive : liveResponse.items;
+
+          if (badgeEl) {
+            badgeEl.textContent = `${liveResponse.sourceLabel} (${finalLive.length})`;
+          }
+          renderSearchResultsGrid([...localMatches, ...finalLive], q);
+          return;
+        }
+      } else if (statusEl) {
+        statusEl.classList.add('hidden');
+      }
+
+      if (badgeEl) {
+        badgeEl.textContent = combinedInitial.length > 0
+          ? `Matches (${combinedInitial.length})`
+          : 'No Local Matches';
+      }
+    }
+
+    function renderSearchResultsGrid(results, query) {
+      const grid = document.getElementById('ytSearchResultsGrid');
+      if (!grid) return;
+
+      if (!results || results.length === 0) {
+        const safeQ = escapeHtml(query || '');
+        const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query || '')}`;
+        grid.innerHTML = `
+          <div class="col-span-full bg-slate-900/80 border border-slate-800 rounded-xl p-6 text-center space-y-3">
+            <div class="w-10 h-10 bg-rose-500/15 text-rose-400 rounded-full flex items-center justify-center mx-auto">
+              <i data-lucide="search-x" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-white">No instant matches for "${safeQ}"</h4>
+              <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                Add your <strong>YouTube Data API v3</strong> key above to search all of YouTube via <code class="text-slate-300">search.list</code>, or search directly on YouTube and paste the link above!
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <a href="${ytSearchUrl}" target="_blank" rel="noopener noreferrer" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2 rounded-lg inline-flex items-center space-x-1.5 transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span>Search "${safeQ}" on YouTube</span>
+              </a>
+              <button type="button" onclick="resetSearchFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-2 rounded-lg transition cursor-pointer">
+                Show All Curated
+              </button>
+            </div>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = results.map(videoItem => {
+        const watchUrl = videoItem.watchUrl || `https://www.youtube.com/watch?v=${videoItem.id}`;
+        const thumbUrl = videoItem.thumbnail || `https://img.youtube.com/vi/${videoItem.id}/hqdefault.jpg`;
+        const safeTitle = escapeHtml(videoItem.title);
+        const safeChannel = escapeHtml(videoItem.channel);
+        const safeDuration = escapeHtml(videoItem.duration || 'HD');
+        const escapedTitleArg = safeTitle.replace(/'/g, "\\'");
+        const escapedChannelArg = safeChannel.replace(/'/g, "\\'");
+        const escapedUrlArg = escapeHtml(watchUrl).replace(/'/g, "\\'");
+
+        const playAction = videoItem.isLocalSource
+          ? `loadVideoKey('${escapeHtml(videoItem.sourceKey)}')`
+          : videoItem.isDirectFileUrl
+            ? `handleQuickUrlLoad('${escapedUrlArg}')`
+            : `playSearchResultVideo('${escapeHtml(videoItem.id)}', '${escapedTitleArg}', '${escapedChannelArg}')`;
+
+        return `
+          <div class="bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-brand-500/40 rounded-xl overflow-hidden flex flex-col justify-between transition group">
+            <div>
+              <div class="relative aspect-video bg-slate-950 overflow-hidden cursor-pointer" onclick="${playAction}">
+                <img 
+                  src="${thumbUrl}" 
+                  alt="${safeTitle}" 
+                  onerror="this.src='https://placehold.co/480x270/0f172a/94a3b8?text=Video+Preview'"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                >
+                <span class="absolute bottom-1.5 right-1.5 bg-black/85 text-white text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded">
+                  ${safeDuration}
+                </span>
+                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <div class="p-2.5 bg-brand-600 text-white rounded-full shadow-lg">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3 pb-2">
+                <h4 class="text-xs font-semibold text-slate-100 line-clamp-2 leading-snug" title="${safeTitle}">
+                  ${safeTitle}
+                </h4>
+                <p class="text-[11px] text-slate-400 mt-1 truncate">${safeChannel}</p>
+              </div>
+            </div>
+
+            <div class="px-3 pb-3 pt-1 flex items-center gap-1.5">
+              <button 
+                type="button"
+                onclick="copySearchResultLink('${escapedUrlArg}', this)"
+                class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-1.5 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center space-x-1 transition cursor-pointer"
+                title="Copy link to clipboard">
+                <i data-lucide="copy" class="w-3 h-3 text-brand-400"></i>
+                <span>Copy Link</span>
+              </button>
+
+              <button 
+                type="button"
+                onclick="${playAction}"
+                class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 transition cursor-pointer"
+                title="Load and play immediately in viewer">
+                <i data-lucide="play" class="w-3 h-3 fill-current"></i>
+                <span>Play</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    window.resetSearchFilters = function() {
+      const input = document.getElementById('ytSearchInput');
+      const clearBtn = document.getElementById('btnClearSearch');
+      if (input) input.value = '';
+      if (clearBtn) clearBtn.classList.add('hidden');
+      activeSearchCategory = 'all';
+      updateCategoryChipsUI();
+      performYouTubeSearch('');
+    };
+
+    window.copySearchResultLink = async function(url, btnEl) {
+      const ok = await copyTextToClipboard(url);
+      if (btnEl) {
+        const origHtml = btnEl.innerHTML;
+        btnEl.classList.remove('bg-slate-800', 'text-slate-200');
+        btnEl.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
+        btnEl.innerHTML = `<i data-lucide="check" class="w-3 h-3"></i><span>Copied!</span>`;
+        if (window.lucide) lucide.createIcons();
+
+        setTimeout(() => {
+          btnEl.classList.add('bg-slate-800', 'text-slate-200');
+          btnEl.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+          btnEl.innerHTML = origHtml;
+          if (window.lucide) lucide.createIcons();
+        }, 1800);
+      }
+      if (ok) {
+        showInlineToast(`Copied: ${url} — Paste it into the bar above to play!`);
+      }
+    };
+
+    window.playSearchResultVideo = function(ytId, title, channel) {
+      const watchUrl = `https://www.youtube.com/watch?v=${ytId}`;
+      currentKey = `yt_custom_${ytId}`;
+      currentLoadedUrl = watchUrl;
+      document.getElementById('videoTitleDisplay').textContent = title || 'YouTube Video';
+      document.getElementById('videoDescDisplay').textContent = `${channel ? channel + ' • ' : ''}${watchUrl}`;
+      const quickInput = document.getElementById('quickPasteUrlInput');
+      if (quickInput) quickInput.value = watchUrl;
+      loadYouTubeVideo(ytId);
+      checkAndPromptResume(currentKey);
+      showInlineToast(`Now playing: ${title}`);
+    };
+
+    function updateCategoryChipsUI() {
+      document.querySelectorAll('.yt-cat-chip').forEach(chip => {
+        if (chip.dataset.cat === activeSearchCategory) {
+          chip.classList.remove('bg-slate-800', 'text-slate-300');
+          chip.classList.add('bg-brand-600', 'text-white');
+        } else {
+          chip.classList.add('bg-slate-800', 'text-slate-300');
+          chip.classList.remove('bg-brand-600', 'text-white');
+        }
+      });
+    }
+
+    // Handle Quick Paste & Play URL submission (supports YouTube URLs & direct .mp4/.m3u8/.webm/.mov files)
+    function handleQuickUrlLoad(rawInput) {
+      const url = (rawInput || '').trim();
+      if (!url) {
+        showInlineToast('Please paste or enter a valid YouTube or video URL first.');
+        return;
+      }
+
+      const ytId = extractYouTubeId(url);
+      if (ytId) {
+        const cleanWatchUrl = `https://www.youtube.com/watch?v=${ytId}`;
+        currentKey = `yt_custom_${ytId}`;
+        currentLoadedUrl = cleanWatchUrl;
+        const catalogMatch = CURATED_YT_CATALOG.find(item => item.id === ytId);
+        document.getElementById('videoTitleDisplay').textContent = catalogMatch ? catalogMatch.title : `YouTube Video (${ytId})`;
+        document.getElementById('videoDescDisplay').textContent = catalogMatch ? `${catalogMatch.channel} • ${cleanWatchUrl}` : cleanWatchUrl;
+        loadYouTubeVideo(ytId);
+        checkAndPromptResume(currentKey);
+        showInlineToast('YouTube video loaded into viewer!');
+      } else {
+        currentKey = 'custom_stream';
+        currentLoadedUrl = url;
+        const fileName = url.split('/').pop().split('?')[0] || 'Custom Stream Source';
+        document.getElementById('videoTitleDisplay').textContent = isDirectVideoFileUrl(url) ? fileName : 'Custom Stream Source';
+        document.getElementById('videoDescDisplay').textContent = url;
+        loadSourceUrl(url);
+        showInlineToast('Stream loaded into viewer!');
+      }
+    }
+
+    // ==========================================
+    // YOUTUBE IFRAME API & HTML5 PLAYER ENGINE
+    // ==========================================
     window.onYouTubeIframeAPIReady = function() {
       try {
         ytPlayer = new YT.Player('ytPlayer', {
@@ -980,7 +2094,6 @@
       const ytPlayerDiv = document.getElementById('ytPlayer');
       if (ytPlayerDiv) ytPlayerDiv.classList.add('hidden');
       if (ytFallbackIframe) {
-        // Enforce youtube-nocookie.com embed endpoint for privacy and ad shielding
         const sanitizedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&controls=1&rel=0&iv_load_policy=3&enablejsapi=1`;
         ytFallbackIframe.src = sanitizedUrl;
         ytFallbackIframe.classList.remove('hidden');
@@ -1011,6 +2124,7 @@
       }
       initAdShield();
       renderMemoryHistoryList();
+      filterSampleLibrarySidebar('');
       loadVideoKey('big_buck_bunny');
       setupEventListeners();
     }
@@ -1020,15 +2134,14 @@
       const data = VIDEO_SOURCES[key];
       if (!data) return;
 
+      currentLoadedUrl = data.url;
       document.getElementById('videoTitleDisplay').textContent = data.title;
       document.getElementById('videoDescDisplay').textContent = data.desc;
       currentSubtitles = data.subtitles || [];
-      videoSelect.value = key;
+      if (videoSelect) videoSelect.value = key;
 
-      // Check Watch Memory for saved playback spot
       checkAndPromptResume(key);
 
-      // Highlight Active Playlist Item
       document.querySelectorAll('.playlist-item').forEach(item => {
         if (item.dataset.vid === key) {
           item.classList.add('bg-slate-800/80', 'border-accent/40');
@@ -1050,15 +2163,14 @@
       hideErrorOverlay();
       isYouTubeMode = true;
       currentYtId = ytId;
+      currentLoadedUrl = `https://www.youtube.com/watch?v=${ytId}`;
 
       try { video.pause(); } catch(e) {}
       video.classList.add('hidden');
       
-      // Bring YouTube wrapper to front (z-30) so clicks go directly to YouTube's player
       ytPlayerWrapper.classList.remove('hidden');
       ytPlayerWrapper.classList.add('z-30');
       
-      // Adjust controls container so it does not block clicks on YouTube's native UI
       controlsContainer.classList.add('pointer-events-none', 'opacity-0');
 
       const ytPlayerDiv = document.getElementById('ytPlayer');
@@ -1077,7 +2189,6 @@
         }
       } else {
         pendingYtId = ytId;
-        // Direct fallback iframe embed if API takes too long or is blocked by school domain
         setTimeout(() => {
           if (!ytReady && isYouTubeMode) {
             useDirectYouTubeIframe(ytId);
@@ -1098,6 +2209,7 @@
 
       isYouTubeMode = false;
       currentYtId = null;
+      currentLoadedUrl = cleanUrl;
       stopYouTubeTicker();
 
       if (ytReady && ytPlayer && typeof ytPlayer.stopVideo === 'function') {
@@ -1208,7 +2320,6 @@
       } else if (video) {
         if (video.paused) {
           video.play().then(() => showPauseIcon(true)).catch(err => {
-            console.warn("Autoplay/play blocked:", err);
             video.muted = true;
             video.play().then(() => showPauseIcon(true)).catch(e => console.error(e));
           });
@@ -1246,7 +2357,6 @@
       currentTimeEl.textContent = formatTime(cur);
       durationEl.textContent = formatTime(dur);
 
-      // Throttle memory saving to every 2 seconds during playback
       if (Math.abs(cur - (window.lastSavedTimestamp || 0)) > 2) {
         window.lastSavedTimestamp = cur;
         saveCurrentVideoProgress();
@@ -1273,6 +2383,148 @@
     }
 
     function setupEventListeners() {
+      // YouTube Search Form & Inputs
+      const searchForm = document.getElementById('ytSearchForm');
+      const searchInput = document.getElementById('ytSearchInput');
+      const clearSearchBtn = document.getElementById('btnClearSearch');
+
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        openYouTubeSearchPanel(searchInput.value);
+      });
+
+      searchInput.addEventListener('focus', () => {
+        const panel = document.getElementById('ytSearchResultsPanel');
+        if (panel && panel.classList.contains('hidden')) {
+          openYouTubeSearchPanel(searchInput.value);
+        }
+      });
+
+      searchInput.addEventListener('input', () => {
+        if (searchInput.value.trim().length > 0) {
+          clearSearchBtn.classList.remove('hidden');
+        } else {
+          clearSearchBtn.classList.add('hidden');
+        }
+        filterSampleLibrarySidebar(searchInput.value);
+      });
+
+      clearSearchBtn.addEventListener('click', () => {
+        resetSearchFilters();
+        searchInput.focus();
+      });
+
+      // Inline YouTube Data API v3 Key Save Handler
+      const btnSaveInlineKey = document.getElementById('btnSaveInlineApiKey');
+      const inlineKeyInput = document.getElementById('inlineYtApiKeyInput');
+      if (btnSaveInlineKey && inlineKeyInput) {
+        btnSaveInlineKey.addEventListener('click', () => {
+          const keyVal = inlineKeyInput.value.trim();
+          if (!keyVal) {
+            showInlineToast('Please enter a valid YouTube Data API v3 key (AIzaSy...).');
+            return;
+          }
+          SafeStorage.setItem(YT_API_KEY_STORAGE, keyVal);
+          inlineKeyInput.value = '';
+          updateYtApiKeyBannerVisibility();
+          showInlineToast('YouTube Data API v3 key saved! Searching via search.list...');
+          performYouTubeSearch(searchInput.value);
+        });
+      }
+
+      // Sample Library Sidebar Filter Input Listeners
+      const libFilterInput = document.getElementById('sampleLibraryFilterInput');
+      const btnClearLibFilter = document.getElementById('btnClearLibraryFilter');
+      if (libFilterInput) {
+        libFilterInput.addEventListener('input', () => {
+          const val = libFilterInput.value;
+          if (btnClearLibFilter) {
+            btnClearLibFilter.classList.toggle('hidden', val.trim().length === 0);
+          }
+          filterSampleLibrarySidebar(val);
+        });
+      }
+      if (btnClearLibFilter && libFilterInput) {
+        btnClearLibFilter.addEventListener('click', () => {
+          libFilterInput.value = '';
+          btnClearLibFilter.classList.add('hidden');
+          filterSampleLibrarySidebar('');
+          libFilterInput.focus();
+        });
+      }
+
+      document.getElementById('btnCloseSearchPanel').addEventListener('click', closeYouTubeSearchPanel);
+      document.getElementById('btnPopupYtSearch').addEventListener('click', () => {
+        openYouTubeSearchWindow(searchInput.value);
+      });
+      document.getElementById('btnOpenBrowseCatalog').addEventListener('click', () => {
+        openYouTubeSearchPanel(searchInput.value);
+      });
+
+      document.querySelectorAll('.yt-cat-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeSearchCategory = chip.dataset.cat;
+          updateCategoryChipsUI();
+          performYouTubeSearch(searchInput.value);
+        });
+      });
+
+      // Quick Paste & Play URL Bar Listeners
+      const quickPasteInput = document.getElementById('quickPasteUrlInput');
+      const btnPasteClipboard = document.getElementById('btnPasteFromClipboard');
+      const btnQuickPlay = document.getElementById('btnQuickPlayUrl');
+
+      btnPasteClipboard.addEventListener('click', async () => {
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const clipText = await navigator.clipboard.readText();
+            if (clipText) {
+              quickPasteInput.value = clipText.trim();
+              showInlineToast('Pasted link from clipboard!');
+              return;
+            }
+          }
+        } catch (err) {}
+        quickPasteInput.focus();
+        quickPasteInput.select();
+        showInlineToast('Press Ctrl+V (or Cmd+V) to paste your copied link into the box!');
+      });
+
+      btnQuickPlay.addEventListener('click', () => {
+        handleQuickUrlLoad(quickPasteInput.value);
+      });
+
+      quickPasteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleQuickUrlLoad(quickPasteInput.value);
+        }
+      });
+
+      quickPasteInput.addEventListener('paste', () => {
+        setTimeout(() => {
+          const pastedVal = quickPasteInput.value.trim();
+          if (extractYouTubeId(pastedVal) || isDirectVideoFileUrl(pastedVal)) {
+            handleQuickUrlLoad(pastedVal);
+          }
+        }, 50);
+      });
+
+      document.getElementById('btnCopyCurrentUrl').addEventListener('click', async () => {
+        const urlToCopy = isYouTubeMode && currentYtId
+          ? `https://www.youtube.com/watch?v=${currentYtId}`
+          : currentLoadedUrl;
+        const ok = await copyTextToClipboard(urlToCopy);
+        if (ok) {
+          showInlineToast(`Copied current video link: ${urlToCopy}`);
+        }
+      });
+
+      document.getElementById('btnCloseToast').addEventListener('click', () => {
+        document.getElementById('inlineToast').classList.add('hidden');
+      });
+
+      // HTML5 & UI Player Listeners
       video.addEventListener('play', () => showPauseIcon(true));
       video.addEventListener('pause', () => showPauseIcon(false));
       video.addEventListener('timeupdate', updateProgress);
@@ -1290,7 +2542,13 @@
 
       document.getElementById('btnDismissResume').addEventListener('click', hideResumeBanner);
 
-      document.getElementById('btnRetryLoad').addEventListener('click', () => loadVideoKey(currentKey));
+      document.getElementById('btnRetryLoad').addEventListener('click', () => {
+        if (isYouTubeMode && currentYtId) {
+          loadYouTubeVideo(currentYtId);
+        } else {
+          loadVideoKey(currentKey);
+        }
+      });
       document.getElementById('btnLoadFallback').addEventListener('click', () => loadVideoKey('big_buck_bunny'));
 
       video.addEventListener('waiting', () => loadingSpinner.classList.remove('opacity-0'));
@@ -1429,7 +2687,9 @@
         }
       });
 
-      videoSelect.addEventListener('change', (e) => loadVideoKey(e.target.value));
+      if (videoSelect) {
+        videoSelect.addEventListener('change', (e) => loadVideoKey(e.target.value));
+      }
 
       document.querySelectorAll('.playlist-item').forEach(item => {
         item.addEventListener('click', () => loadVideoKey(item.dataset.vid));
@@ -1493,6 +2753,39 @@
       const embedModal = document.getElementById('embedModal');
       const urlModal = document.getElementById('urlModal');
       const shortcutsModal = document.getElementById('shortcutsModal');
+      const ytApiModal = document.getElementById('ytApiModal');
+      const ytApiKeyInput = document.getElementById('ytApiKeyInput');
+
+      document.getElementById('btnOpenApiModal').addEventListener('click', () => {
+        if (ytApiKeyInput) {
+          ytApiKeyInput.value = SafeStorage.getItem(YT_API_KEY_STORAGE) || '';
+        }
+        ytApiModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btnCloseApiModal').addEventListener('click', () => ytApiModal.classList.add('hidden'));
+
+      document.getElementById('btnSaveYtApiKey').addEventListener('click', () => {
+        const keyVal = (ytApiKeyInput?.value || '').trim();
+        if (keyVal) {
+          SafeStorage.setItem(YT_API_KEY_STORAGE, keyVal);
+          showInlineToast('YouTube Data API v3 key saved! Live searches will use search.list first.');
+        } else {
+          SafeStorage.removeItem(YT_API_KEY_STORAGE);
+          showInlineToast('Cleared custom API key; using fallback search relays.');
+        }
+        updateYtApiKeyBannerVisibility();
+        ytApiModal.classList.add('hidden');
+        const currentQuery = (document.getElementById('ytSearchInput')?.value || '').trim();
+        if (currentQuery) performYouTubeSearch(currentQuery);
+      });
+
+      document.getElementById('btnClearYtApiKey').addEventListener('click', () => {
+        SafeStorage.removeItem(YT_API_KEY_STORAGE);
+        if (ytApiKeyInput) ytApiKeyInput.value = '';
+        updateYtApiKeyBannerVisibility();
+        showInlineToast('YouTube API key removed.');
+      });
 
       document.getElementById('btnOpenEmbedModal').addEventListener('click', () => {
         updateEmbedSnippet();
