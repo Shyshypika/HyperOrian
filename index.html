@@ -21,19 +21,18 @@
   <div id="topbar">
     <input id="workerInput" type="text" placeholder="https://workers.dev" />
     <button id="homeBtn" title="Back to Home">Home</button>
-    <input id="queryInput" type="text" placeholder="Search Mojeek or paste https://..." />
+    <input id="queryInput" type="text" placeholder="Search the web or paste https://..." />
     <button id="goBtn">Search</button>
     <button id="cloakBtn" title="Hide inside an about:blank tab">about:blank Cloak</button>
   </div>
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    // Fixed: Added https:// in front
     const DEFAULT_WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev"; 
 
-    // Fixed: Added slash before search?q=
-    const DDG_HOME = "https://mojeek.com";
-    const DDG_SEARCH = "https://mojeek.comsearch?q=";
+    // Updated to FrogFind (no ALTCHA or CAPTCHA walls)
+    const SEARCH_HOME = "http://frogfind.com";
+    const SEARCH_QUERY = "http://frogfind.com?q=";
 
     const workerInput = document.getElementById("workerInput");
     const queryInput = document.getElementById("queryInput");
@@ -67,36 +66,36 @@
       }
 
       if (!q) {
-        loadUrl(DDG_HOME);
+        loadUrl(SEARCH_HOME);
         return;
       }
 
       let targetUrl = q;
       if (!q.startsWith("http://") && !q.startsWith("https://")) {
-        targetUrl = DDG_SEARCH + encodeURIComponent(q);
+        targetUrl = SEARCH_QUERY + encodeURIComponent(q);
       }
 
       loadUrl(targetUrl);
     }
 
-    // Auto-load Mojeek immediately when the page opens
+    // Auto-load search homepage immediately when the page opens
     const initialWorker = getWorker();
     if (initialWorker) {
       workerInput.value = initialWorker;
-      loadUrl(DDG_HOME);
+      loadUrl(SEARCH_HOME);
     }
 
     workerInput.addEventListener("change", () => {
       const w = getWorker();
       if (w) {
         try { localStorage.setItem("proxy_worker_url", w); } catch (e) {}
-        loadUrl(DDG_HOME);
+        loadUrl(SEARCH_HOME);
       }
     });
 
     document.getElementById("homeBtn").addEventListener("click", () => {
       queryInput.value = "";
-      loadUrl(DDG_HOME);
+      loadUrl(SEARCH_HOME);
     });
 
     document.getElementById("goBtn").addEventListener("click", navigate);
