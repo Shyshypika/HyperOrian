@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    
+    <linearGradient id="cyber-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#05070E" />
+      <stop offset="100%" stop-color="#0F1426" />
+    </linearGradient>
+
+    
+    <linearGradient id="rgb-neon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5FF" />
+      <stop offset="50%" stop-color="#7000FF" />
+      <stop offset="100%" stop-color="#FF007A" />
+    </linearGradient>
+
+    
+    <linearGradient id="cyan-beam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F5FF" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+
+    
+    <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  
+  <polygon points="48,8 208,8 248,48 248,208 208,248 48,248 8,208 8,48" fill="url(#cyber-bg)" stroke="url(#rgb-neon)" stroke-width="3" />
+
+  
+  <g stroke="#00F5FF" stroke-opacity="0.12" stroke-width="1">
+    <line x1="128" y1="20" x2="128" y2="236" />
+    <line x1="20" y1="128" x2="236" y2="128" />
+    <circle cx="128" cy="128" r="88" fill="none" stroke-dasharray="12 6 3 6" />
+    <circle cx="128" cy="128" r="64" fill="none" stroke-opacity="0.2" stroke-dasharray="2 8" />
+  </g>
+
+  
+  <g fill="none" stroke="#00F5FF" stroke-width="2.5" stroke-linecap="square" filter="url(#neon-glow)">
+    <path d="M 32 54 L 32 32 L 54 32" />
+    <path d="M 224 54 L 224 32 L 202 32" />
+    <path d="M 32 202 L 32 224 L 54 224" />
+    <path d="M 224 202 L 224 224 L 202 224" />
+  </g>
+
+  
+  <g fill="none" stroke="#7000FF" stroke-width="2" stroke-opacity="0.7">
+    
+    <polyline points="128,24 128,46 112,62" />
+    <circle cx="128" cy="24" r="2.5" fill="#00F5FF" />
+    
+    <polyline points="128,232 128,210 144,194" />
+    <circle cx="128" cy="232" r="2.5" fill="#FF007A" />
+    
+    <polyline points="26,110 48,110 64,126" />
+    <polyline points="230,146 208,146 192,130" />
+  </g>
+
+  
+  <g stroke="url(#rgb-neon)" stroke-width="3.5" stroke-linecap="square" stroke-linejoin="miter" filter="url(#neon-glow)">
+    
+    <polyline points="74,66 94,96 108,136" fill="none" />
+    <polyline points="182,72 162,98 148,120" fill="none" />
+    
+    <line x1="74" y1="66" x2="182" y2="72" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6" />
+
+    
+    <line x1="108" y1="136" x2="148" y2="120" stroke="#00F5FF" stroke-width="4" />
+
+    
+    <polyline points="108,136 92,164 80,190" fill="none" />
+    <polyline points="148,120 164,154 176,186" fill="none" />
+    <line x1="80" y1="190" x2="176" y2="186" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6" />
+  </g>
+
+  
+  <g filter="url(#neon-glow)">
+    
+    <polygon points="74,58 81,62 81,70 74,74 67,70 67,62" fill="#05070E" stroke="#00F5FF" stroke-width="2.5" />
+    <circle cx="74" cy="66" r="2.5" fill="#FFFFFF" />
+
+    
+    <polygon points="182,65 188,68.5 188,75.5 182,79 176,75.5 176,68.5" fill="#05070E" stroke="#7000FF" stroke-width="2.5" />
+    <circle cx="182" cy="72" r="2" fill="#FFFFFF" />
+
+    
+    <polygon points="80,183 86,186.5 86,193.5 80,197 74,193.5 74,186.5" fill="#05070E" stroke="#7000FF" stroke-width="2.5" />
+    <circle cx="80" cy="190" r="2" fill="#FFFFFF" />
+
+    
+    <polygon points="176,178 183,182 183,190 176,194 169,190 169,182" fill="#05070E" stroke="#FF007A" stroke-width="2.5" />
+    <circle cx="176" cy="186" r="2.5" fill="#FFFFFF" />
+  </g>
+
+  
+  <g filter="url(#neon-glow)">
+    
+    <polygon points="108,129 115,136 108,143 101,136" fill="#00F5FF" />
+    <circle cx="108" cy="136" r="2" fill="#05070E" />
+
+    
+    <polygon points="148,113 155,120 148,127 141,120" fill="#FF007A" />
+    <circle cx="148" cy="120" r="2" fill="#05070E" />
+
+    
+    <circle cx="128" cy="128" r="14" fill="none" stroke="#00F5FF" stroke-width="1.5" stroke-dasharray="4 3" />
+    <polygon points="128,110 132,124 146,128 132,132 128,146 124,132 110,128 124,124" fill="#FFFFFF" />
+    <circle cx="128" cy="128" r="3" fill="#00F5FF" />
+  </g>
+</svg>
