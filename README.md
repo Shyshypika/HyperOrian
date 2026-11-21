@@ -3,7 +3,7 @@
 An open-source web browser and YouTube viewer project.
 
 # Use CloudFlare.js to make ur own proxy
-Due to the fact that i only get 100000 request every week
+Due to the fact that i only get 100000 request every Day
 
 ## This uses a Custom Browser I made Call hyperOrain.
 U can get the code on my github 
