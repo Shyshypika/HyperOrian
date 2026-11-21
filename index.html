@@ -22,7 +22,7 @@
     .quick-link { width: 38px; height: 38px; padding: 5px; background: #343445; }
     .quick-link img { width: 100%; height: 100%; object-fit: contain; }
     iframe { flex: 1; border: none; width: 100%; background: #fff; }
-    #settingsPanel { display: none; position: fixed; z-index: 100; top: 64px; right: 12px; width: min(340px, calc(100vw - 24px)); padding: 16px; border: 1px solid #444; border-radius: 10px; background: #23232f; box-shadow: 0 12px 30px #0009; }
+    #settingsPanel { display: none; position: fixed; z-index: 100; top: 64px; right: 12px; width: min(340px, calc(100vw - 24px)); padding: 16px; border: 1px solid #444; border-radius: 10px; background: #252532; box-shadow: 0 12px 32px #0008; }
     #settingsPanel.open { display: block; }
     .setting-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; margin-top: 10px; }
     .icon-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -93,7 +93,7 @@
     queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
 
     document.getElementById("youtubeBtn").addEventListener("click", () => {
-      viewer.src = "Youtube viewer";
+      viewer.src = "Youtubeviewer.html";
     });
 
     document.querySelectorAll(".quick-link").forEach(button => {
@@ -125,7 +125,7 @@
       const win = window.open("about:blank", "_blank");
       if (!win) { alert("Pop-up blocked! Allow pop-ups and try again."); return; }
       win.document.open();
-      win.document.write(`<!DOCTYPE html><html><head><title>Classes</title><style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{width:100%;height:100%;border:none}</style></head><body><iframe src="${GAME_PROXY}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock" allow="fullscreen; autoplay; gamepad"></iframe></body></html>`);
+      win.document.write(`<!DOCTYPE html><html><head><title>Classes</title><style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{width:100%;height:100%;border:0}</style></head><body><iframe src="${GAME_PROXY}" allow="autoplay; fullscreen; gamepad"></iframe></body></html>`);
       win.document.close();
     });
 
