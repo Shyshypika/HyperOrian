@@ -1,2 +1,3 @@
 # HyperOrian
-This is a open source project that includes a Youtube viewer a web Browser with maybe a proxy  
+
+An open-source web browser and YouTube viewer project.

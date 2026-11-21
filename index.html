@@ -1,30 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Classes</title>
+  <link id="tabIcon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>">
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #121218; color: #fff; }
     #topbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: #1e1e28; border-bottom: 1px solid #333; align-items: center; }
-    input { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a36; color: #fff; font-size: 14px; }
+    input, select { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a36; color: #fff; font-size: 14px; }
     #queryInput { flex: 1; min-width: 180px; }
     button { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: #6c5ce7; color: #fff; font-size: 14px; }
     button:hover { opacity: 0.9; }
     #homeBtn { background: #3b3b4f; }
+    #youtubeBtn { background: #cc2936; }
+    #settingsBtn { background: #0984e3; }
     #gameBtn { background: #e17055; }
     #cloakBtn { background: #00b894; }
+    #quickLinks { display: flex; gap: 6px; }
+    .quick-link { width: 38px; height: 38px; padding: 5px; background: #343445; }
+    .quick-link img { width: 100%; height: 100%; object-fit: contain; }
     iframe { flex: 1; border: none; width: 100%; background: #fff; }
+    #settingsPanel { display: none; position: fixed; z-index: 100; top: 64px; right: 12px; width: min(340px, calc(100vw - 24px)); padding: 16px; border: 1px solid #444; border-radius: 10px; background: #23232f; box-shadow: 0 12px 30px #0009; }
+    #settingsPanel.open { display: block; }
+    .setting-row { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 8px; margin-top: 10px; }
+    .icon-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .icon-option { height: 46px; padding: 6px; background: #343445; }
+    .icon-option img { width: 100%; height: 100%; object-fit: contain; }
   </style>
 </head>
 <body>
   <div id="topbar">
     <button id="homeBtn">Home</button>
-    <input id="queryInput" type="text" placeholder="Search FrogFind or paste https://..." />
+    <input id="queryInput" type="text" placeholder="Search FrogFind or paste https://...">
     <button id="goBtn">Search</button>
+    <button id="youtubeBtn">YouTube Viewer</button>
     <button id="gameBtn">3D Games (Sandboxed)</button>
+    <button id="settingsBtn">Settings</button>
     <button id="cloakBtn">Cloak Tab</button>
+    <div id="quickLinks" aria-label="Quick links">
+      <button class="quick-link" data-site="https://classroom.google.com" title="Google Classroom"><img src="clock icon/1-google-classroom.svg" alt="Google Classroom"></button>
+      <button class="quick-link" data-site="https://docs.google.com" title="Doux"><img src="clock icon/2-doux.svg" alt="Doux"></button>
+      <button class="quick-link" data-site="https://drive.google.com" title="Google Drive"><img src="clock icon/3-drive.svg" alt="Google Drive"></button>
+      <button class="quick-link" data-site="https://gemini.google.com" title="Gemini"><img src="clock icon/4-gemini.svg" alt="Gemini"></button>
+    </div>
   </div>
+
+  <div id="settingsPanel" role="dialog" aria-label="Settings">
+    <h3>Settings</h3>
+    <div class="setting-row">
+      <label for="tabTitle">Tab title</label>
+      <input id="tabTitle" value="Classes">
+    </div>
+    <div class="setting-row">
+      <label>Tab icon</label>
+      <div class="icon-options">
+        <button class="icon-option" data-icon="clock icon/1-google-classroom.svg" title="Google Classroom"><img src="clock icon/1-google-classroom.svg" alt=""></button>
+        <button class="icon-option" data-icon="clock icon/2-doux.svg" title="Doux"><img src="clock icon/2-doux.svg" alt=""></button>
+        <button class="icon-option" data-icon="clock icon/3-drive.svg" title="Google Drive"><img src="clock icon/3-drive.svg" alt=""></button>
+        <button class="icon-option" data-icon="clock icon/4-gemini.svg" title="Gemini"><img src="clock icon/4-gemini.svg" alt=""></button>
+      </div>
+    </div>
+  </div>
+
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
@@ -32,7 +71,6 @@
     const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
     const SEARCH_HOME = "http://frogfind.com";
     const SEARCH_QUERY = "http://frogfind.com?q=";
-
     const queryInput = document.getElementById("queryInput");
     const viewer = document.getElementById("viewer");
 
@@ -42,69 +80,61 @@
 
     function navigate() {
       let q = queryInput.value.trim();
-      if (!q) {
-        loadUrl(SEARCH_HOME);
-        return;
-      }
+      if (!q) { loadUrl(SEARCH_HOME); return; }
       let targetUrl = q;
-      if (!q.startsWith("http://") && !q.startsWith("https://")) {
-        targetUrl = SEARCH_QUERY + encodeURIComponent(q);
-      }
+      if (!q.startsWith("http://") && !q.startsWith("https://")) targetUrl = SEARCH_QUERY + encodeURIComponent(q);
       loadUrl(targetUrl);
     }
 
     loadUrl(SEARCH_HOME);
 
-    document.getElementById("homeBtn").addEventListener("click", () => {
-      queryInput.value = "";
-      loadUrl(SEARCH_HOME);
+    document.getElementById("homeBtn").addEventListener("click", () => { queryInput.value = ""; loadUrl(SEARCH_HOME); });
+    document.getElementById("goBtn").addEventListener("click", navigate);
+    queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
+
+    document.getElementById("youtubeBtn").addEventListener("click", () => {
+      viewer.src = "Youtube viewer";
     });
 
-    document.getElementById("goBtn").addEventListener("click", navigate);
-    queryInput.addEventListener("keypress", (e) => { if (e.key === "Enter") navigate(); });
+    document.querySelectorAll(".quick-link").forEach(button => {
+      button.addEventListener("click", () => loadUrl(button.dataset.site));
+    });
 
-    // Launch beautiful.thevoiceexchange.com inside a sandboxed about:blank iframe
+    const settingsPanel = document.getElementById("settingsPanel");
+    document.getElementById("settingsBtn").addEventListener("click", () => settingsPanel.classList.toggle("open"));
+
+    document.getElementById("tabTitle").addEventListener("input", event => {
+      document.title = event.target.value || "Classes";
+      localStorage.setItem("hyperorianTabTitle", document.title);
+    });
+
+    document.querySelectorAll(".icon-option").forEach(button => {
+      button.addEventListener("click", () => {
+        const icon = document.getElementById("tabIcon");
+        icon.href = button.dataset.icon;
+        localStorage.setItem("hyperorianTabIcon", button.dataset.icon);
+      });
+    });
+
+    const savedTitle = localStorage.getItem("hyperorianTabTitle");
+    const savedIcon = localStorage.getItem("hyperorianTabIcon");
+    if (savedTitle) { document.title = savedTitle; document.getElementById("tabTitle").value = savedTitle; }
+    if (savedIcon) document.getElementById("tabIcon").href = savedIcon;
+
     document.getElementById("gameBtn").addEventListener("click", () => {
       const win = window.open("about:blank", "_blank");
-      if (!win) {
-        alert("Pop-up blocked! Click the pop-up icon in your address bar and select Always allow.");
-        return;
-      }
-
+      if (!win) { alert("Pop-up blocked! Allow pop-ups and try again."); return; }
       win.document.open();
-      win.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Classes</title>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-    iframe { width: 100%; height: 100%; border: none; }
-  </style>
-</head>
-<body>
-  <iframe
-    src="${GAME_PROXY}"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-orientation-lock"
-    allow="fullscreen; autoplay; gamepad">
-  </iframe>
-</body>
-</html>`);
+      win.document.write(`<!DOCTYPE html><html><head><title>Classes</title><style>html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000}iframe{width:100%;height:100%;border:none}</style></head><body><iframe src="${GAME_PROXY}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock" allow="fullscreen; autoplay; gamepad"></iframe></body></html>`);
       win.document.close();
     });
 
-    // Cloak this main page inside about:blank
     document.getElementById("cloakBtn").addEventListener("click", () => {
       const win = window.open("about:blank", "_blank");
-      if (!win) {
-        alert("Pop-up blocked! Click the pop-up icon in your address bar and select Always allow.");
-        return;
-      }
+      if (!win) { alert("Pop-up blocked! Allow pop-ups and try again."); return; }
       win.document.open();
-      win.document.write(
-        `<!DOCTYPE html><html><head><title>Classes</title>${document.head.innerHTML}</head><body>${document.body.innerHTML}</body></html>`
-      );
+      win.document.write(`<!DOCTYPE html><html><head><title>${document.title}</title>${document.head.innerHTML}</head><body>${document.body.innerHTML}</body></html>`);
       win.document.close();
-
       const oldScript = win.document.getElementById("appScript");
       if (oldScript) oldScript.remove();
       const newScript = win.document.createElement("script");
