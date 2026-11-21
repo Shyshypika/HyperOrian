@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10131e">
+  <title>Launch HyperOrian</title>
+  <link rel="icon" href="Icons/Logo.png" type="image/png">
+  <style>
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; color: #f4f6ff; background: radial-gradient(ellipse at 50% 30%, #28234d 0, transparent 50%), #10131e; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(560px, 100%); padding: clamp(28px, 7vw, 58px); text-align: center; border: 1px solid #ffffff17; border-radius: 28px; background: #191e2ddd; box-shadow: 0 24px 80px #0005; }
+    img { width: min(62%, 230px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 14px 32px #0008); }
+    h1 { margin: 14px 0 10px; font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: -.05em; }
+    p { margin: 0 auto 28px; max-width: 390px; color: #aab2c8; line-height: 1.65; }
+    .launch { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 26px; border-radius: 14px; color: #171326; background: #b6aaff; font: inherit; font-weight: 800; text-decoration: none; box-shadow: 0 10px 30px #9c8bff33; transition: transform .2s, background .2s; }
+    .launch:hover, .launch:focus-visible { transform: translateY(-2px); background: #c9c0ff; outline: 3px solid #ffffff55; outline-offset: 3px; }
+    .launch img { width: 22px; height: 22px; filter: none; }
+    .back { display: block; margin-top: 22px; color: #aab2c8; font-size: .9rem; text-decoration: none; }
+    .back:hover { color: #fff; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="Icons/Logo.png" alt="HyperOrian logo">
+    <h1>Ready to launch?</h1>
+    <p>Start HyperOrian in your browser. The launcher opens the web browser page.</p>
+    <a class="launch" href="Web.html"><img src="Icons/HyperOrain.svg" alt="">Launch HyperOrian</a>
+    <a class="back" href="index.html">← Back to home</a>
+  </main>
+</body>
+</html>
