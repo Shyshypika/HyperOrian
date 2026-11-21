@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Classes</title>
-  <link id="tabIcon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>">
+  <link id="tabIcon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://w3.org>">
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #121218; color: #fff; }
@@ -33,26 +33,30 @@
 <body>
   <div id="topbar">
     <button id="homeBtn">Home</button>
-    <input id="queryInput" type="text" placeholder="Search FrogFind or paste https://...">
+    <select id="engineSelect" title="Choose Search Engine">
+      <option value="hyperorain">HyperOrain</option>
+      <option value="frog">FrogFind (Backup)</option>
+    </select>
+    <input id="queryInput" type="text" placeholder="Search with HyperOrain or paste https://...">
     <button id="goBtn">Search</button>
     <button id="youtubeBtn">YouTube Viewer</button>
     <button id="gameBtn">3D Games (Sandboxed)</button>
     <button id="settingsBtn">Settings</button>
     <button id="cloakBtn">Cloak Tab</button>
     <div id="quickLinks" aria-label="Quick links">
-      <button class="quick-link" data-site="https://classroom.google.com" title="Google Classroom">
+      <button class="quick-link" data-site="https://google.com" title="Google Classroom">
         <img src="Icons/Classroom.svg" alt="Google Classroom">
       </button>
-      <button class="quick-link" data-site="https://docs.google.com" title="Google Docs">
+      <button class="quick-link" data-site="https://google.com" title="Google Docs">
         <img src="Icons/docs.svg" alt="Google Docs">
       </button>
-      <button class="quick-link" data-site="https://drive.google.com" title="Google Drive">
+      <button class="quick-link" data-site="https://google.com" title="Google Drive">
         <img src="Icons/google-drive.svg" alt="Google Drive">
       </button>
-      <button class="quick-link" data-site="https://gemini.google.com" title="Gemini">
+      <button class="quick-link" data-site="https://google.com" title="Gemini">
         <img src="Icons/Gemini.svg" alt="Gemini">
       </button>
-      <button class="quick-link" data-site="https://hyperorian.com" title="HyperOrain">
+      <button class="quick-link" data-site="https://onrender.com" title="HyperOrain">
         <img src="Icons/HyperOrain.svg" alt="HyperOrain">
       </button>
     </div>
@@ -89,12 +93,27 @@
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    const WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev";
-    const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
-    const SEARCH_HOME = "http://frogfind.com";
-    const SEARCH_QUERY = "http://frogfind.com?q=";
+    const WORKER_URL = "https://workers.dev";
+    const GAME_PROXY = "https://thevoiceexchange.com";
+
+    const ENGINES = {
+      hyperorain: {
+        home: "https://onrender.com/",
+        query: "https://onrender.com/search?q="
+      },
+      frog: {
+        home: "http://frogfind.com",
+        query: "http://frogfind.com"
+      }
+    };
+
     const queryInput = document.getElementById("queryInput");
+    const engineSelect = document.getElementById("engineSelect");
     const viewer = document.getElementById("viewer");
+
+    function getEngine() {
+      return ENGINES[engineSelect.value] || ENGINES.hyperorain;
+    }
 
     function loadUrl(targetUrl) {
       viewer.src = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
@@ -102,15 +121,22 @@
 
     function navigate() {
       let q = queryInput.value.trim();
-      if (!q) { loadUrl(SEARCH_HOME); return; }
+      const engine = getEngine();
+      if (!q) { loadUrl(engine.home); return; }
       let targetUrl = q;
-      if (!q.startsWith("http://") && !q.startsWith("https://")) targetUrl = SEARCH_QUERY + encodeURIComponent(q);
+      if (!q.startsWith("http://") && !q.startsWith("https://")) {
+        targetUrl = engine.query + encodeURIComponent(q);
+      }
       loadUrl(targetUrl);
     }
 
-    loadUrl(SEARCH_HOME);
+    loadUrl(getEngine().home);
 
-    document.getElementById("homeBtn").addEventListener("click", () => { queryInput.value = ""; loadUrl(SEARCH_HOME); });
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      queryInput.value = "";
+      loadUrl(getEngine().home);
+    });
+    engineSelect.addEventListener("change", navigate);
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
 
