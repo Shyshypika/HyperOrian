@@ -19,14 +19,35 @@
     .intro { margin: 20px 0 30px; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
     h2 { margin: 0 0 12px; font-size: 1rem; }
     .pages { display: grid; gap: 10px; }
-    .page-link { display: flex; align-items: center; gap: 13px; padding: 14px 16px; border: 1px solid #ffffff14; border-radius: 14px; color: var(--text); background: #ffffff08; text-decoration: none; transition: background .2s, transform .2s, border-color .2s; }
+    .page-link { position: relative; overflow: hidden; display: flex; align-items: center; gap: 13px; padding: 14px 16px; border: 1px solid #ffffff14; border-radius: 14px; color: var(--text); background: #ffffff08; text-decoration: none; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
     .page-link:hover, .page-link:focus-visible { transform: translateY(-2px); border-color: #9c8bff77; background: #9c8bff18; outline: none; }
     .page-link img { width: 28px; height: 28px; object-fit: contain; }
     .page-link span { display: grid; gap: 2px; }
     .page-link strong { font-size: .95rem; }
     .page-link small { color: var(--muted); font-size: .8rem; }
+    .account { margin-top: 24px; padding-top: 20px; border-top: 1px solid #ffffff17; }
+    .account-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .account-heading h2 { margin: 0; }
+    .account-form { display: grid; gap: 10px; }
+    .account-form[hidden], .account-status[hidden], .account-view[hidden] { display: none; }
+    label { color: var(--muted); font-size: .82rem; }
+    input { width: 100%; margin-top: 5px; padding: 11px 12px; border: 1px solid #ffffff20; border-radius: 10px; color: var(--text); background: #10131e; font: inherit; }
+    input:focus { border-color: var(--accent); outline: 2px solid #9c8bff44; }
+    button { font: inherit; }
+    .account-button { position: relative; overflow: hidden; padding: 10px 14px; border: 1px solid #9c8bff66; border-radius: 10px; color: var(--text); background: #9c8bff20; cursor: pointer; }
+    .account-button:hover { background: #9c8bff38; }
+    .account-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .form-actions { display: flex; align-items: center; gap: 12px; }
+    .text-button { padding: 8px 0; border: 0; color: var(--muted); background: transparent; text-decoration: underline; cursor: pointer; }
+    .account-status { min-height: 1.25em; margin: 10px 0 0; color: #ffb6b6; font-size: .84rem; }
+    .account-status.success { color: #a9e8c1; }
+    .account-view { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .9rem; }
+    .account-view strong { color: var(--text); }
+    .ripple { position: absolute; width: 12px; height: 12px; border-radius: 50%; pointer-events: none; background: #ffffff70; transform: translate(-50%, -50%) scale(0); animation: ripple .55s ease-out forwards; }
+    @keyframes ripple { to { transform: translate(-50%, -50%) scale(18); opacity: 0; } }
     footer { margin-top: 24px; color: #78819b; font-size: .78rem; }
     @media (max-width: 700px) { body { padding: 22px; } .layout { grid-template-columns: 1fr; gap: 10px; } .brand img { width: min(52vw, 220px); } .content { padding: 28px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
   </style>
 </head>
 <body>
@@ -47,8 +68,165 @@
           <span><strong>YouTube viewer</strong><small>Open the YouTube viewer page</small></span>
         </a>
       </nav>
+
+      <section class="account" aria-labelledby="account-title">
+        <div class="account-heading">
+          <h2 id="account-title">Account</h2>
+          <button class="account-button" id="account-toggle" type="button">Create account / Sign in</button>
+        </div>
+        <div class="account-view" id="account-view" hidden>
+          <span>Signed in as <strong id="account-name"></strong></span>
+          <button class="text-button" id="sign-out" type="button">Sign out</button>
+        </div>
+        <form class="account-form" id="account-form" hidden>
+          <label>Username
+            <input id="username" name="username" type="text" autocomplete="username" minlength="3" maxlength="32" required>
+          </label>
+          <label>Password
+            <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+          </label>
+          <div class="form-actions">
+            <button class="account-button" id="submit-account" type="submit">Create account</button>
+            <button class="text-button" id="switch-mode" type="button">Already have an account? Sign in</button>
+          </div>
+        </form>
+        <p class="account-status" id="account-status" role="status" aria-live="polite" hidden></p>
+      </section>
       <footer>Open-source project · HyperOrian</footer>
     </section>
   </main>
+  <script>
+    (() => {
+      const STORAGE_KEY = 'hyperorian.accounts.v1';
+      const SESSION_KEY = 'hyperorian.currentUser';
+      const form = document.getElementById('account-form');
+      const status = document.getElementById('account-status');
+      const toggle = document.getElementById('account-toggle');
+      const submit = document.getElementById('submit-account');
+      const switchMode = document.getElementById('switch-mode');
+      const accountView = document.getElementById('account-view');
+      let mode = 'register';
+
+      function readAccounts() {
+        try {
+          const accounts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          return accounts && typeof accounts === 'object' && !Array.isArray(accounts) ? accounts : {};
+        } catch { return {}; }
+      }
+
+      function showStatus(message, success = false) {
+        status.textContent = message;
+        status.hidden = !message;
+        status.classList.toggle('success', success);
+      }
+
+      function showSignedIn(username) {
+        document.getElementById('account-name').textContent = username;
+        accountView.hidden = false;
+        form.hidden = true;
+        toggle.hidden = true;
+        showStatus('', false);
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        submit.textContent = mode === 'register' ? 'Create account' : 'Sign in';
+        switchMode.textContent = mode === 'register' ? 'Already have an account? Sign in' : 'Need an account? Create one';
+        document.getElementById('password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+        showStatus('');
+      }
+
+      async function hashPassword(password, salt) {
+        if (!globalThis.crypto?.subtle) throw new Error('Secure password hashing is unavailable. Open this site over HTTPS.');
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+        const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 210000, hash: 'SHA-256' }, key, 256);
+        return Array.from(new Uint8Array(bits), byte => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      function randomSalt() {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      function fromHex(hex) {
+        return new Uint8Array(hex.match(/.{2}/g).map(byte => parseInt(byte, 16)));
+      }
+
+      toggle.addEventListener('click', () => {
+        form.hidden = !form.hidden;
+        if (!form.hidden) document.getElementById('username').focus();
+      });
+
+      switchMode.addEventListener('click', () => setMode(mode === 'register' ? 'login' : 'register'));
+
+      document.getElementById('sign-out').addEventListener('click', () => {
+        sessionStorage.removeItem(SESSION_KEY);
+        accountView.hidden = true;
+        toggle.hidden = false;
+        toggle.textContent = 'Create account / Sign in';
+        form.hidden = true;
+        showStatus('Signed out.', true);
+      });
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const usernameKey = username.toLowerCase();
+        if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+          showStatus('Use 3–32 letters, numbers, or underscores for your username.');
+          return;
+        }
+        if (password.length < 8) {
+          showStatus('Your password must be at least 8 characters.');
+          return;
+        }
+
+        submit.disabled = true;
+        try {
+          const accounts = readAccounts();
+          if (mode === 'register') {
+            if (accounts[usernameKey]) {
+              showStatus('That username already exists on this browser.');
+              return;
+            }
+            const salt = randomSalt();
+            accounts[usernameKey] = { username, salt, passwordHash: await hashPassword(password, fromHex(salt)) };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+            sessionStorage.setItem(SESSION_KEY, username);
+            showSignedIn(username);
+          } else {
+            const account = accounts[usernameKey];
+            if (!account || !account.salt || !account.passwordHash || await hashPassword(password, fromHex(account.salt)) !== account.passwordHash) {
+              showStatus('Username or password is incorrect.');
+              return;
+            }
+            sessionStorage.setItem(SESSION_KEY, account.username);
+            showSignedIn(account.username);
+          }
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : 'Could not save your account in this browser.');
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      const savedUser = sessionStorage.getItem(SESSION_KEY);
+      if (savedUser && readAccounts()[savedUser.toLowerCase()]) showSignedIn(savedUser);
+
+      document.addEventListener('click', event => {
+        const target = event.target.closest('.page-link, .account-button');
+        if (!target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const bounds = target.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        ripple.style.left = `${event.clientX - bounds.left}px`;
+        ripple.style.top = `${event.clientY - bounds.top}px`;
+        target.append(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+      });
+    })();
+  </script>
 </body>
 </html>
