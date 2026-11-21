@@ -8,10 +8,8 @@
     body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #121218; color: #fff; }
     #topbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: #1e1e28; border-bottom: 1px solid #333; align-items: center; }
     input { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a36; color: #fff; font-size: 14px; }
-    #workerInput { width: 200px; }
-    #gameUrlInput { width: 210px; }
     #queryInput { flex: 1; min-width: 180px; }
-    button { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: #6c5ce7; color: #fff; }
+    button { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: #6c5ce7; color: #fff; font-size: 14px; }
     button:hover { opacity: 0.9; }
     #homeBtn { background: #3b3b4f; }
     #gameBtn { background: #e17055; }
@@ -21,99 +19,41 @@
 </head>
 <body>
   <div id="topbar">
-    <input id="workerInput" type="text" placeholder="Worker URL" title="Cloudflare Worker URL" />
-    <button id="homeBtn" title="Back to FrogFind">Home</button>
+    <button id="homeBtn">Home</button>
     <input id="queryInput" type="text" placeholder="Search FrogFind or paste https://..." />
     <button id="goBtn">Search</button>
-    <input id="gameUrlInput" type="text" placeholder="Game Proxy URL" title="3D Game Proxy Link" />
-    <button id="gameBtn" title="Open 3D game proxy in a new tab">Open 3D Games</button>
-    <button id="cloakBtn" title="Hide this page inside an about:blank tab">Cloak Tab</button>
+    <button id="gameBtn">3D Games (Sandboxed)</button>
+    <button id="cloakBtn">Cloak Tab</button>
   </div>
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    const DEFAULT_WORKER_URL = "https://workers.dev";
-    const DEFAULT_GAME_PROXY = "https://thevoiveexchange.com";
+    const WORKER_URL = "https://workers.dev";
+    const GAME_PROXY = "https://thevoiceexchange.com";
     const SEARCH_HOME = "http://frogfind.com";
     const SEARCH_QUERY = "http://frogfind.com?q=";
 
-    const workerInput = document.getElementById("workerInput");
-    const gameUrlInput = document.getElementById("gameUrlInput");
     const queryInput = document.getElementById("queryInput");
     const viewer = document.getElementById("viewer");
 
-    function getWorker() {
-      let saved = "";
-      try { saved = localStorage.getItem("proxy_worker_url") || ""; } catch (e) {}
-      let w = (workerInput.value.trim() || saved || DEFAULT_WORKER_URL).replace(/\/$/, "");
-      if (w && !w.startsWith("http://") && !w.startsWith("https://")) {
-        w = "https://" + w;
-      }
-      return w;
-    }
-
-    function getGameProxy() {
-      let saved = "";
-      try { saved = localStorage.getItem("game_proxy_url") || ""; } catch (e) {}
-      let g = (gameUrlInput.value.trim() || saved || DEFAULT_GAME_PROXY).replace(/\/$/, "");
-      if (g && !g.startsWith("http://") && !g.startsWith("https://")) {
-        g = "https://" + g;
-      }
-      return g;
-    }
-
     function loadUrl(targetUrl) {
-      const worker = getWorker();
-      if (!worker) return;
-      try { localStorage.setItem("proxy_worker_url", worker); } catch (e) {}
-      workerInput.value = worker;
-      viewer.src = `${worker}/?url=${encodeURIComponent(targetUrl)}`;
+      viewer.src = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
     }
 
     function navigate() {
-      const worker = getWorker();
       let q = queryInput.value.trim();
-
-      if (!worker) {
-        alert("Paste your Cloudflare Worker URL into the first box first.");
-        return;
-      }
-
       if (!q) {
         loadUrl(SEARCH_HOME);
         return;
       }
-
       let targetUrl = q;
       if (!q.startsWith("http://") && !q.startsWith("https://")) {
         targetUrl = SEARCH_QUERY + encodeURIComponent(q);
       }
-
       loadUrl(targetUrl);
     }
 
-    // Initialize saved URLs and load FrogFind
-    const initialWorker = getWorker();
-    if (initialWorker) {
-      workerInput.value = initialWorker;
-      loadUrl(SEARCH_HOME);
-    }
-    gameUrlInput.value = getGameProxy();
-
-    workerInput.addEventListener("change", () => {
-      const w = getWorker();
-      if (w) {
-        try { localStorage.setItem("proxy_worker_url", w); } catch (e) {}
-        loadUrl(SEARCH_HOME);
-      }
-    });
-
-    gameUrlInput.addEventListener("change", () => {
-      const g = getGameProxy();
-      if (g) {
-        try { localStorage.setItem("game_proxy_url", g); } catch (e) {}
-      }
-    });
+    loadUrl(SEARCH_HOME);
 
     document.getElementById("homeBtn").addEventListener("click", () => {
       queryInput.value = "";
@@ -123,24 +63,42 @@
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", (e) => { if (e.key === "Enter") navigate(); });
 
-    // Open the 3D game proxy directly in a new tab so Service Workers & iframes don't break
+    // Launch ://thevoiceexchange.com inside a sandboxed about:blank iframe
     document.getElementById("gameBtn").addEventListener("click", () => {
-      const gameUrl = getGameProxy();
-      if (!gameUrl) return;
-      try { localStorage.setItem("game_proxy_url", gameUrl); } catch (e) {}
-      window.open(gameUrl, "_blank", "noopener,noreferrer");
-    });
-
-    // Cloak this entire webpage inside an about:blank tab
-    document.getElementById("cloakBtn").addEventListener("click", () => {
-      const currentWorker = getWorker();
-      const currentGame = getGameProxy();
       const win = window.open("about:blank", "_blank");
       if (!win) {
-        alert("Pop-up blocked! Allow pop-ups for this file to use the about:blank cloak.");
+        alert("Pop-up blocked! Click the pop-up icon in your address bar and select Always allow.");
         return;
       }
 
+      win.document.open();
+      win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Classes</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+  <iframe
+    src="${GAME_PROXY}"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-pointer-lock"
+    allow="fullscreen; autoplay; gamepad">
+  </iframe>
+</body>
+</html>`);
+      win.document.close();
+    });
+
+    // Cloak this main page inside about:blank
+    document.getElementById("cloakBtn").addEventListener("click", () => {
+      const win = window.open("about:blank", "_blank");
+      if (!win) {
+        alert("Pop-up blocked! Click the pop-up icon in your address bar and select Always allow.");
+        return;
+      }
       win.document.open();
       win.document.write(
         `<!DOCTYPE html><html><head><title>Classes</title>${document.head.innerHTML}</head><body>${document.body.innerHTML}</body></html>`
@@ -152,8 +110,6 @@
       const newScript = win.document.createElement("script");
       newScript.textContent = document.getElementById("appScript").textContent;
       win.document.body.appendChild(newScript);
-      if (currentWorker) win.document.getElementById("workerInput").value = currentWorker;
-      if (currentGame) win.document.getElementById("gameUrlInput").value = currentGame;
     });
   </script>
 </body>
