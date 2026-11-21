@@ -7,19 +7,20 @@
   <title>HyperOrian — Home</title>
   <link rel="icon" href="Icons/Logo.png" type="image/png">
   <style>
-    :root { color-scheme: dark; --bg: #10131e; --panel: #191e2d; --text: #f4f6ff; --muted: #aab2c8; --accent: #9c8bff; }
+    :root { color-scheme: dark; --bg: #10131e; --text: #f4f6ff; --muted: #aab2c8; --accent: #9c8bff; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px; color: var(--text); background: radial-gradient(ellipse at 18% 45%, #28234d 0, transparent 44%), var(--bg); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .layout { width: min(1050px, 100%); display: grid; grid-template-columns: minmax(240px, 0.9fr) 1.1fr; gap: clamp(32px, 7vw, 88px); align-items: center; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 32px; color: var(--text); background: radial-gradient(ellipse at 18% 45%, #28234d 0, transparent 44%), var(--bg); font: 16px/1.5 system-ui, sans-serif; }
+    .layout { width: min(1050px, 100%); display: grid; grid-template-columns: minmax(240px, .9fr) 1.1fr; gap: clamp(32px, 7vw, 88px); align-items: center; }
     .brand { display: grid; place-items: center; }
-    .brand img { display: block; width: min(100%, 390px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 20px 50px #0008); }
+    .brand img { display: block; width: min(100%, 390px); aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 20px 50px #0008); animation: float 5s ease-in-out infinite; }
+    @keyframes float { 50% { transform: translateY(-10px); } }
     .content { padding: clamp(24px, 5vw, 52px); border: 1px solid #ffffff17; border-radius: 28px; background: #191e2dcc; box-shadow: 0 24px 80px #0005; }
     .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
     h1 { margin: 0; font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1; letter-spacing: -.06em; }
     .intro { margin: 20px 0 30px; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
     h2 { margin: 0 0 12px; font-size: 1rem; }
     .pages { display: grid; gap: 10px; }
-    .page-link { display: flex; align-items: center; gap: 13px; padding: 14px 16px; border: 1px solid #ffffff14; border-radius: 14px; color: var(--text); background: #ffffff08; text-decoration: none; transition: background .2s, transform .2s, border-color .2s; }
+    .page-link { display: flex; align-items: center; gap: 13px; padding: 14px 16px; border: 1px solid #ffffff14; border-radius: 14px; color: var(--text); background: #ffffff08; text-decoration: none; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
     .page-link:hover, .page-link:focus-visible { transform: translateY(-2px); border-color: #9c8bff77; background: #9c8bff18; outline: none; }
     .page-link img { width: 28px; height: 28px; object-fit: contain; }
     .page-link span { display: grid; gap: 2px; }
@@ -27,6 +28,7 @@
     .page-link small { color: var(--muted); font-size: .8rem; }
     footer { margin-top: 24px; color: #78819b; font-size: .78rem; }
     @media (max-width: 700px) { body { padding: 22px; } .layout { grid-template-columns: 1fr; gap: 10px; } .brand img { width: min(52vw, 220px); } .content { padding: 28px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
   </style>
 </head>
 <body>
@@ -40,11 +42,7 @@
       <nav class="pages" aria-label="Pages">
         <a class="page-link" href="launch.html">
           <img src="Icons/HyperOrain.svg" alt="">
-          <span><strong>Browser launcher</strong><small>Open the launch page for the web browser</small></span>
-        </a>
-        <a class="page-link" href="Web.html">
-          <img src="Icons/docs.svg" alt="">
-          <span><strong>Web browser</strong><small>Go straight to the browser</small></span>
+          <span><strong>Browser launcher</strong><small>Launch the HyperOrian web browser</small></span>
         </a>
         <a class="page-link" href="Youtubeviewer.html">
           <img src="Icons/Gemini.svg" alt="">
