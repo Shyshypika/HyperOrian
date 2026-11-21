@@ -28,7 +28,8 @@
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    const WORKER_URL = "https://workers.dev";
+    // Fixed: Restored your actual Cloudflare Worker URL
+    const WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev";
     const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
     const SEARCH_HOME = "http://frogfind.com";
     const SEARCH_QUERY = "http://frogfind.com?q=";
@@ -63,7 +64,7 @@
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", (e) => { if (e.key === "Enter") navigate(); });
 
-    // Launch ://thevoiceexchange.com inside a sandboxed about:blank iframe
+    // Launch beautiful.thevoiceexchange.com inside a sandboxed about:blank iframe
     document.getElementById("gameBtn").addEventListener("click", () => {
       const win = window.open("about:blank", "_blank");
       if (!win) {
