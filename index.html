@@ -20,20 +20,20 @@
 <body>
   <div id="topbar">
     <input id="workerInput" type="text" placeholder="https://workers.dev" />
-    <button id="homeBtn" title="Back to DuckDuckGo">Home</button>
-    <input id="queryInput" type="text" placeholder="Search DuckDuckGo or paste https://..." />
+    <button id="homeBtn" title="Back to Home">Home</button>
+    <input id="queryInput" type="text" placeholder="Search Mojeek or paste https://..." />
     <button id="goBtn">Search</button>
     <button id="cloakBtn" title="Hide inside an about:blank tab">about:blank Cloak</button>
   </div>
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    // OPTIONAL: Paste your Worker URL inside the quotes below so it's saved permanently
-    const DEFAULT_WORKER_URL = "hyperorianvpn1.yangdaniel64.workers.dev/"; 
+    // Fixed: Added https:// in front
+    const DEFAULT_WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev"; 
 
+    // Fixed: Added slash before search?q=
     const DDG_HOME = "https://mojeek.com";
     const DDG_SEARCH = "https://mojeek.comsearch?q=";
-
 
     const workerInput = document.getElementById("workerInput");
     const queryInput = document.getElementById("queryInput");
@@ -42,7 +42,11 @@
     function getWorker() {
       let saved = "";
       try { saved = localStorage.getItem("proxy_worker_url") || ""; } catch (e) {}
-      return (workerInput.value.trim() || saved || DEFAULT_WORKER_URL).replace(/\/$/, "");
+      let w = (workerInput.value.trim() || saved || DEFAULT_WORKER_URL).replace(/\/$/, "");
+      if (w && !w.startsWith("http://") && !w.startsWith("https://")) {
+        w = "https://" + w;
+      }
+      return w;
     }
 
     function loadUrl(targetUrl) {
@@ -62,13 +66,11 @@
         return;
       }
 
-      // If empty, load DuckDuckGo homepage
       if (!q) {
         loadUrl(DDG_HOME);
         return;
       }
 
-      // Auto-add DuckDuckGo search URL in front unless it already starts with http:// or https://
       let targetUrl = q;
       if (!q.startsWith("http://") && !q.startsWith("https://")) {
         targetUrl = DDG_SEARCH + encodeURIComponent(q);
@@ -77,7 +79,7 @@
       loadUrl(targetUrl);
     }
 
-    // Auto-load DuckDuckGo immediately when the page opens
+    // Auto-load Mojeek immediately when the page opens
     const initialWorker = getWorker();
     if (initialWorker) {
       workerInput.value = initialWorker;
@@ -85,7 +87,7 @@
     }
 
     workerInput.addEventListener("change", () => {
-      const w = workerInput.value.trim().replace(/\/$/, "");
+      const w = getWorker();
       if (w) {
         try { localStorage.setItem("proxy_worker_url", w); } catch (e) {}
         loadUrl(DDG_HOME);
@@ -100,12 +102,12 @@
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", (e) => { if (e.key === "Enter") navigate(); });
 
-    // Open in an about:blank cloaked tab with DuckDuckGo already loaded
+    // Open in an about:blank cloaked tab
     document.getElementById("cloakBtn").addEventListener("click", () => {
       const currentWorker = getWorker();
       const win = window.open("about:blank", "_blank");
       if (!win) {
-        alert("Pop-up blocked! Enable pop-ups for this file to use the about:blank cloak.");
+        alert("Pop-up blocked! Enable pop-ups for this site to use the about:blank cloak.");
         return;
       }
 
