@@ -33,11 +33,7 @@
 <body>
   <div id="topbar">
     <button id="homeBtn">Home</button>
-    <select id="engineSelect" title="Choose Search Engine">
-      <option value="hyperorain">HyperOrain</option>
-      <option value="frog">FrogFind (Backup)</option>
-    </select>
-    <input id="queryInput" type="text" placeholder="Search with HyperOrain or paste https://...">
+    <input id="queryInput" type="text" placeholder="Search HyperOrain or paste https://...">
     <button id="goBtn">Search</button>
     <button id="youtubeBtn">YouTube Viewer</button>
     <button id="gameBtn">3D Games (Sandboxed)</button>
@@ -56,10 +52,9 @@
       <button class="quick-link" data-site="https://google.com" title="Gemini">
         <img src="Icons/Gemini.svg" alt="Gemini">
       </button>
-     <button class="quick-link" data-site="https://hyperorain.internal" title="HyperOrain">
-       <img src="Icons/HyperOrain.svg" alt="HyperOrain">
+      <button class="quick-link" data-site="https://onrender.com" title="HyperOrain">
+        <img src="Icons/HyperOrain.svg" alt="HyperOrain">
       </button>
-
     </div>
   </div>
 
@@ -94,53 +89,34 @@
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-   const WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev/";
-   const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
-   const SEARCH_HOME = "https://hyperorain.internal";
-   const SEARCH_QUERY = "https://hyperorain.internalsearch?q=";
-
-
-    const ENGINES = {
-      hyperorain: {
-        home: "https://onrender.com/",
-        query: "https://onrender.com/search?q="
-      },
-      frog: {
-        home: "http://frogfind.com",
-        query: "http://frogfind.com"
-      }
-    };
-
+    const WORKER_URL = "https://workers.dev";
+    const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
+    const SEARCH_HOME = "https://hyperorainweb.onrender.com";
+    const SEARCH_QUERY = "https://hyperorainweb.onrender.com/search?q=";
     const queryInput = document.getElementById("queryInput");
-    const engineSelect = document.getElementById("engineSelect");
     const viewer = document.getElementById("viewer");
 
-    function getEngine() {
-      return ENGINES[engineSelect.value] || ENGINES.hyperorain;
-    }
-
     function loadUrl(targetUrl) {
-      viewer.src = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
+      if (targetUrl.startsWith("https://onrender.com")) {
+        viewer.src = targetUrl;
+      } else {
+        viewer.src = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
+      }
     }
 
     function navigate() {
       let q = queryInput.value.trim();
-      const engine = getEngine();
-      if (!q) { loadUrl(engine.home); return; }
+      if (!q) { loadUrl(SEARCH_HOME); return; }
       let targetUrl = q;
       if (!q.startsWith("http://") && !q.startsWith("https://")) {
-        targetUrl = engine.query + encodeURIComponent(q);
+        targetUrl = SEARCH_QUERY + encodeURIComponent(q);
       }
       loadUrl(targetUrl);
     }
 
-    loadUrl(getEngine().home);
+    loadUrl(SEARCH_HOME);
 
-    document.getElementById("homeBtn").addEventListener("click", () => {
-      queryInput.value = "";
-      loadUrl(getEngine().home);
-    });
-    engineSelect.addEventListener("change", navigate);
+    document.getElementById("homeBtn").addEventListener("click", () => { queryInput.value = ""; loadUrl(SEARCH_HOME); });
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
 
