@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniPlayer - Modern Embedded Video Player</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- HLS.js for .m3u8 live video stream support -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+
+    /* Custom Seek Bar Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-track {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      height: 6px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 14px;
+      width: 14px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      transition: transform 0.1s ease;
+      margin-top: -4px;
+    }
+
+    input[type="range"]:hover::-webkit-slider-thumb {
+      transform: scale(1.3);
+    }
+
+    /* Dynamic Accent Theme Classes */
+    .theme-violet { --accent-color: #8b5cf6; }
+    .theme-emerald { --accent-color: #10b981; }
+    .theme-rose { --accent-color: #f43f5e; }
+    .theme-amber { --accent-color: #f59e0b; }
+    .theme-cyan { --accent-color: #06b6d4; }
+
+    .bg-accent { background-color: var(--accent-color, #8b5cf6); }
+    .text-accent { color: var(--accent-color, #8b5cf6); }
+    .border-accent { border-color: var(--accent-color, #8b5cf6); }
+
+    /* Hide Controls Timeout Cursor */
+    .hide-cursor {
+      cursor: none;
+    }
+
+    /* Glassmorphic Effects */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col theme-violet antialiased overflow-x-hidden">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo & Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-gradient-to-tr from-brand-600 to-indigo-500 rounded-xl shadow-lg shadow-brand-500/20">
+          <i data-lucide="play" class="w-5 h-5 text-white fill-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-none text-white tracking-tight">OmniPlayer</h1>
+          <span class="text-xs text-slate-400 font-medium">Embeddable HTML5 & HLS Media Suite</span>
+        </div>
+      </div>
+
+      <!-- Action Controls Header -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Preset Playlist Dropdown -->
+        <div class="relative group">
+          <select id="videoSelect" class="bg-slate-800 hover:bg-slate-700/80 text-xs sm:text-sm text-slate-200 border border-slate-700/80 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-brand-500 transition appearance-none cursor-pointer">
+            <option value="big_buck_bunny">Big Buck Bunny (1080p MP4)</option>
+            <option value="oceans">Oceans World (1080p MP4)</option>
+            <option value="sintel">Sintel Movie (W3C Sample MP4)</option>
+            <option value="yt_tears_of_steel">YouTube: Developer Demo</option>
+            <option value="yt_lofi">YouTube: Big Buck Bunny 4K</option>
+            <option value="hls_stream">HLS Test Stream (.m3u8)</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+
+        <!-- Local File Load Button -->
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 cursor-pointer border border-slate-700/80 transition">
+          <i data-lucide="upload" class="w-4 h-4 text-slate-400"></i>
+          <span class="hidden md:inline">Load File</span>
+          <input type="file" id="fileInput" accept="video/*" class="hidden">
+        </label>
+
+        <!-- Custom Stream URL Modal Trigger -->
+        <button id="btnOpenUrlModal" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 border border-slate-700/80 transition" title="Load custom Stream URL">
+          <i data-lucide="link" class="w-4 h-4 text-slate-400"></i>
+          <span class="hidden md:inline">URL</span>
+        </button>
+
+        <!-- AdShield Ad Blocker Toggle Button -->
+        <button id="btnToggleAdShield" class="bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition" title="AdShield & Privacy Guard Active">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+          <span class="hidden lg:inline text-xs font-semibold">AdShield On</span>
+        </button>
+
+        <!-- Embed Generator Button -->
+        <button id="btnOpenEmbedModal" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-2 shadow-lg shadow-brand-600/25 transition">
+          <i data-lucide="code" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Get Embed Code</span>
+        </button>
+
+        <!-- Shortcuts Modal Trigger -->
+        <button id="btnOpenShortcuts" class="text-slate-400 hover:text-slate-200 p-2 rounded-lg transition" title="Keyboard Shortcuts">
+          <i data-lucide="keyboard" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-6">
+    
+    <!-- Player Wrapper Column -->
+    <div class="flex-1 flex flex-col gap-4">
+      
+      <!-- Video Container Frame -->
+      <div id="playerContainer" class="relative group bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/80 aspect-video w-full border border-slate-800 select-none">
+        
+        <!-- HTML5 Video Element -->
+        <video id="mainVideo" class="w-full h-full object-contain cursor-pointer" playsinline webkit-playsinline></video>
+
+        <!-- YouTube Player Wrapper (z-30 when active to guarantee direct click capability) -->
+        <div id="ytPlayerWrapper" class="w-full h-full absolute inset-0 hidden pointer-events-auto z-30">
+          <div id="ytPlayer" class="w-full h-full pointer-events-auto"></div>
+          <iframe id="ytFallbackIframe" class="w-full h-full hidden pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <!-- Resume Playback Toast Banner -->
+        <div id="resumeBanner" class="absolute top-4 left-4 right-16 z-40 bg-slate-900/95 border border-brand-500/50 backdrop-blur-md p-3 rounded-xl shadow-2xl flex items-center justify-between opacity-0 pointer-events-none transition-all duration-300 -translate-y-2">
+          <div class="flex items-center space-x-2 min-w-0 pr-2">
+            <div class="p-1.5 bg-brand-500/20 text-brand-400 rounded-lg shrink-0">
+              <i data-lucide="history" class="w-4 h-4"></i>
+            </div>
+            <div class="truncate">
+              <p class="text-xs font-semibold text-white">Resume Playback?</p>
+              <p class="text-[11px] text-slate-300 truncate">Saved spot at <span id="resumeTimeText" class="font-mono font-bold text-brand-300">00:00</span></p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-1.5 shrink-0">
+            <button id="btnConfirmResume" class="bg-brand-600 hover:bg-brand-500 text-white text-xs px-2.5 py-1 rounded-lg font-medium transition cursor-pointer">
+              Resume
+            </button>
+            <button id="btnDismissResume" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded-lg transition cursor-pointer">
+              Start Over
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic On-Screen Loading Spinner -->
+        <div id="loadingSpinner" class="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs pointer-events-none opacity-0 transition-opacity duration-300 z-10">
+          <div class="w-12 h-12 border-4 border-slate-600 border-t-accent rounded-full animate-spin"></div>
+        </div>
+
+        <!-- Dynamic Error Display Overlay -->
+        <div id="errorOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-center p-6 opacity-0 pointer-events-none transition-opacity duration-300 z-40">
+          <div class="p-3 bg-rose-500/20 text-rose-400 rounded-full mb-3">
+            <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+          </div>
+          <h4 class="text-white font-bold text-base mb-1" id="errorTitle">Video Source Error</h4>
+          <p class="text-xs text-slate-400 max-w-md mb-4" id="errorMessage">The requested media source could not be loaded or cross-origin access was restricted by your browser sandbox.</p>
+          <div class="flex items-center space-x-2">
+            <button id="btnRetryLoad" class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer">
+              Retry Load
+            </button>
+            <button id="btnLoadFallback" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg font-medium border border-slate-700 transition cursor-pointer">
+              Load Backup Stream
+            </button>
+          </div>
+        </div>
+
+        <!-- Big Play/Pause Animation Overlay Indicator -->
+        <div id="actionIndicator" class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 scale-50 transition-all duration-300 z-20">
+          <div class="p-5 bg-black/60 rounded-full text-white backdrop-blur-md">
+            <i id="actionIcon" data-lucide="play" class="w-10 h-10"></i>
+          </div>
+        </div>
+
+        <!-- Subtitles Display Layer -->
+        <div id="subtitleOverlay" class="absolute bottom-16 left-0 right-0 px-8 text-center pointer-events-none z-20 transition-all duration-300">
+          <span id="subtitleText" class="inline-block bg-black/80 text-white font-medium text-sm sm:text-base md:text-lg px-4 py-1.5 rounded-md shadow-md backdrop-blur-xs max-w-2xl hidden"></span>
+        </div>
+
+        <!-- Watermark / Brand Overlay -->
+        <div class="absolute top-4 right-4 pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity z-10">
+          <span class="text-xs font-bold tracking-widest text-slate-300 uppercase bg-black/40 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-md">
+            OmniPlayer
+          </span>
+        </div>
+
+        <!-- Custom Controls Overlay Bar (Active for HTML5 / HLS, non-blocking for YouTube) -->
+        <div id="controlsContainer" class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-3 sm:p-4 opacity-100 transition-opacity duration-300 z-20 flex flex-col justify-end space-y-2">
+          
+          <!-- Progress Bar & Tooltip Container -->
+          <div class="relative w-full group/seek flex items-center">
+            
+            <!-- Seek Time Hover Tooltip -->
+            <div id="seekTooltip" class="absolute -top-10 -translate-x-1/2 bg-slate-900 text-slate-200 text-xs px-2 py-1 rounded border border-slate-700 shadow pointer-events-none opacity-0 transition-opacity duration-150">
+              00:00
+            </div>
+
+            <!-- Custom Seek Range & Buffer Overlay -->
+            <div class="relative w-full h-1.5 hover:h-2.5 transition-all duration-200 bg-slate-700/60 rounded-full overflow-hidden cursor-pointer flex items-center">
+              <!-- Buffer Progress Bar -->
+              <div id="bufferBar" class="absolute left-0 top-0 bottom-0 bg-slate-500/40 w-0 transition-all duration-300"></div>
+              <!-- Played Progress Bar -->
+              <div id="progressBar" class="absolute left-0 top-0 bottom-0 bg-accent w-0"></div>
+              <!-- Native Transparent Range Input -->
+              <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Control Buttons Toolbar -->
+          <div class="flex items-center justify-between text-slate-200 pt-1">
+            
+            <!-- Left Group: Playback, Skip, Volume, Timer -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+              <!-- Play / Pause Button -->
+              <button id="btnPlayPause" class="hover:text-white transition p-1 text-slate-200 focus:outline-none" title="Play/Pause (Space)">
+                <i data-lucide="play" id="iconPlay" class="w-5 h-5 sm:w-6 sm:h-6 fill-current"></i>
+                <i data-lucide="pause" id="iconPause" class="w-5 h-5 sm:w-6 sm:h-6 fill-current hidden"></i>
+              </button>
+
+              <!-- Skip Backward 10s -->
+              <button id="btnRewind" class="hover:text-white transition p-1 text-slate-300" title="Rewind 10s (Left Arrow)">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </button>
+
+              <!-- Skip Forward 10s -->
+              <button id="btnForward" class="hover:text-white transition p-1 text-slate-300" title="Forward 10s (Right Arrow)">
+                <i data-lucide="rotate-cw" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </button>
+
+              <!-- Volume Control Container -->
+              <div class="flex items-center space-x-2 group/volume relative">
+                <button id="btnMute" class="hover:text-white transition p-1 text-slate-300" title="Mute/Unmute (M)">
+                  <i data-lucide="volume-2" id="iconVolumeHigh" class="w-5 h-5"></i>
+                  <i data-lucide="volume-x" id="iconVolumeMute" class="w-5 h-5 hidden text-rose-400"></i>
+                </button>
+                <div class="w-0 group-hover/volume:w-20 sm:w-16 md:w-20 transition-all duration-300 overflow-hidden flex items-center">
+                  <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="w-16">
+                </div>
+              </div>
+
+              <!-- Time Counter Display -->
+              <div class="text-xs font-mono text-slate-300 select-none ml-1">
+                <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+              </div>
+            </div>
+
+            <!-- Right Group: Captions, Speed, PiP, Fullscreen -->
+            <div class="flex items-center space-x-1 sm:space-x-3">
+              <!-- Captions / Subtitles Toggle -->
+              <button id="btnCaptions" class="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition relative" title="Subtitles / CC">
+                <i data-lucide="subtitles" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                <span id="ccIndicator" class="absolute bottom-1 right-1 w-1.5 h-1.5 bg-accent rounded-full hidden"></span>
+              </button>
+
+              <!-- Speed Selector Dropdown -->
+              <div class="relative">
+                <button id="btnSpeedMenu" class="px-2 py-1 text-xs font-semibold rounded hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Playback Speed">
+                  <span id="speedLabel">1x</span>
+                </button>
+                <div id="speedDropdown" class="hidden absolute bottom-full right-0 mb-2 w-28 bg-slate-900 border border-slate-800 rounded-lg shadow-xl overflow-hidden py-1 text-xs z-30">
+                  <button data-speed="0.5" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-slate-300">0.5x</button>
+                  <button data-speed="0.75" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-slate-300">0.75x</button>
+                  <button data-speed="1" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-accent font-bold">1.0x (Normal)</button>
+                  <button data-speed="1.25" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-slate-300">1.25x</button>
+                  <button data-speed="1.5" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-slate-300">1.5x</button>
+                  <button data-speed="2" class="speed-opt w-full px-3 py-1.5 text-left hover:bg-slate-800 text-slate-300">2.0x</button>
+                </div>
+              </div>
+
+              <!-- Picture-in-Picture Toggle -->
+              <button id="btnPip" class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Picture in Picture">
+                <i data-lucide="picture-in-picture-2" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </button>
+
+              <!-- Fullscreen Toggle -->
+              <button id="btnFullscreen" class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Fullscreen (F)">
+                <i data-lucide="maximize" id="iconFullscreen" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                <i data-lucide="minimize" id="iconMinimize" class="w-4 h-4 sm:w-5 sm:h-5 hidden"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Information & Controls Ribbon -->
+      <div class="glass-panel rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 id="videoTitleDisplay" class="text-lg font-bold text-white">Big Buck Bunny</h2>
+          <p id="videoDescDisplay" class="text-xs text-slate-400 mt-0.5">Open source animated feature video sample. 1080p high definition stream.</p>
+        </div>
+
+        <!-- Color Theme Accent Selector -->
+        <div class="flex items-center space-x-2 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800 w-full md:w-auto justify-end">
+          <span class="text-xs text-slate-400 font-medium mr-1">Player Accent:</span>
+          <button data-theme="theme-violet" class="theme-btn w-6 h-6 rounded-full bg-violet-600 ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900 transition"></button>
+          <button data-theme="theme-emerald" class="theme-btn w-6 h-6 rounded-full bg-emerald-500 hover:scale-110 transition"></button>
+          <button data-theme="theme-cyan" class="theme-btn w-6 h-6 rounded-full bg-cyan-500 hover:scale-110 transition"></button>
+          <button data-theme="theme-amber" class="theme-btn w-6 h-6 rounded-full bg-amber-500 hover:scale-110 transition"></button>
+          <button data-theme="theme-rose" class="theme-btn w-6 h-6 rounded-full bg-rose-500 hover:scale-110 transition"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar Playlist & Chapters -->
+    <aside class="w-full lg:w-80 flex flex-col gap-4">
+      
+      <!-- Watch Memory & Saved Progress Card -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+            <i data-lucide="history" class="w-4 h-4 text-brand-400"></i>
+            <span>Watch Memory</span>
+          </h3>
+          <button id="btnClearMemory" class="text-[11px] text-slate-400 hover:text-rose-400 transition flex items-center space-x-1" title="Clear watch progress history">
+            <i data-lucide="trash-2" class="w-3 h-3"></i>
+            <span>Clear</span>
+          </button>
+        </div>
+
+        <!-- Progress Memory Items List Container -->
+        <div id="memoryHistoryList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs">
+          <div class="text-slate-500 text-center py-3 italic text-[11px]">No saved progress yet. Play a video to record memory!</div>
+        </div>
+      </div>
+
+      <!-- Media Quick Switcher Card -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+          <i data-lucide="film" class="w-4 h-4 text-accent"></i>
+          <span>Sample Library</span>
+        </h3>
+
+        <div class="space-y-2" id="playlistItems">
+          <!-- Item 1: Big Buck Bunny (HTML5 MP4) -->
+          <div data-vid="big_buck_bunny" class="playlist-item active-playlist flex items-center space-x-3 p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 cursor-pointer border border-accent/40 transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Big Buck Bunny">
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-white truncate">Big Buck Bunny</h4>
+              <p class="text-[11px] text-slate-400">1080p MP4 • Direct Stream</p>
+            </div>
+          </div>
+
+          <!-- Item 2: Oceans World (HTML5 MP4) -->
+          <div data-vid="oceans" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Oceans">
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-slate-200 truncate">Oceans World</h4>
+              <p class="text-[11px] text-slate-400">Nature Documentary</p>
+            </div>
+          </div>
+
+          <!-- Item 3: Sintel Open Movie (HTML5 MP4) -->
+          <div data-vid="sintel" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="Sintel Trailer">
+              <span class="absolute top-1 left-1 bg-emerald-600 text-[8px] font-bold text-white px-1 rounded">MP4</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-slate-200 truncate">Sintel Movie Trailer</h4>
+              <p class="text-[11px] text-slate-400">W3C Video Sample</p>
+            </div>
+          </div>
+
+          <!-- Item 4: YouTube Playlist Item 1 -->
+          <div data-vid="yt_tears_of_steel" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://img.youtube.com/vi/M7lc1UVf-VE/hqdefault.jpg" class="w-full h-full object-cover" alt="YouTube API Demo">
+              <span class="absolute top-1 left-1 bg-red-600 text-[8px] font-bold text-white px-1 rounded">YT</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-slate-200 truncate">YouTube API Demo</h4>
+              <p class="text-[11px] text-slate-400">Embed YouTube Video</p>
+            </div>
+          </div>
+
+          <!-- Item 5: YouTube Playlist Item 2 -->
+          <div data-vid="yt_lofi" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://img.youtube.com/vi/EngW7tLk6R8/hqdefault.jpg" class="w-full h-full object-cover" alt="Big Buck Bunny YT">
+              <span class="absolute top-1 left-1 bg-red-600 text-[8px] font-bold text-white px-1 rounded">YT</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-slate-200 truncate">Big Buck Bunny (YT)</h4>
+              <p class="text-[11px] text-slate-400">YouTube Stream</p>
+            </div>
+          </div>
+
+          <!-- Item 6: HLS Stream -->
+          <div data-vid="hls_stream" class="playlist-item flex items-center space-x-3 p-2.5 rounded-xl hover:bg-slate-800/60 cursor-pointer border border-transparent transition">
+            <div class="w-16 h-10 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0 relative">
+              <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=120&auto=format&fit=crop&q=60" class="w-full h-full object-cover" alt="HLS Stream">
+              <span class="absolute top-1 left-1 bg-rose-600 text-[8px] font-bold text-white px-1 rounded">LIVE</span>
+              <i data-lucide="play" class="w-3.5 h-3.5 text-white absolute inset-0 m-auto opacity-70"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <h4 class="text-xs font-semibold text-slate-200 truncate">HLS Live Stream</h4>
+              <p class="text-[11px] text-slate-400">m3u8 Adaptive Stream</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Bookmark / Jump Chapters -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-2">
+        <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2 mb-1">
+          <i data-lucide="bookmark" class="w-4 h-4 text-accent"></i>
+          <span>Chapters & Markers</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button data-jump="0" class="btn-jump p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left text-slate-300 hover:text-white transition">
+            <span class="block font-medium text-accent">00:00</span> Intro Scene
+          </button>
+          <button data-jump="10" class="btn-jump p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left text-slate-300 hover:text-white transition">
+            <span class="block font-medium text-accent">00:10</span> Chapter 1
+          </button>
+          <button data-jump="30" class="btn-jump p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left text-slate-300 hover:text-white transition">
+            <span class="block font-medium text-accent">00:30</span> Main Action
+          </button>
+          <button data-jump="50" class="btn-jump p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left text-slate-300 hover:text-white transition">
+            <span class="block font-medium text-accent">00:50</span> Highlights
+          </button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- MODAL 1: Embed Code Generator Modal -->
+  <div id="embedModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-2xl max-w-xl w-full p-6 space-y-5 relative animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="code" class="w-5 h-5 text-brand-500"></i>
+          <h3 class="font-bold text-slate-100 text-lg">Embed Video Player</h3>
+        </div>
+        <button id="btnCloseEmbedModal" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Config options -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-300">
+        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg bg-slate-800/50">
+          <input type="checkbox" id="embedAutoplay" class="rounded border-slate-700 text-brand-600 focus:ring-0">
+          <span>Autoplay</span>
+        </label>
+        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg bg-slate-800/50">
+          <input type="checkbox" id="embedMuted" class="rounded border-slate-700 text-brand-600 focus:ring-0" checked>
+          <span>Muted</span>
+        </label>
+        <label class="flex items-center space-x-2 cursor-pointer p-2 rounded-lg bg-slate-800/50">
+          <input type="checkbox" id="embedControls" class="rounded border-slate-700 text-brand-600 focus:ring-0" checked>
+          <span>Controls</span>
+        </label>
+      </div>
+
+      <!-- Google Sites Notice -->
+      <div class="bg-brand-500/10 border border-brand-500/20 rounded-xl p-3 text-xs text-slate-300 flex items-start space-x-2">
+        <i data-lucide="info" class="w-4 h-4 text-brand-400 shrink-0 mt-0.5"></i>
+        <span><strong>Google Sites Tip:</strong> In Google Sites, use <strong>Insert &gt; Embed &gt; Embed Code</strong> and paste the snippet below.</span>
+      </div>
+
+      <!-- Live Generated Code Output -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">iFrame Embed Snippet</label>
+        <div class="relative">
+          <textarea id="embedCodeTextarea" readonly class="w-full h-28 bg-slate-950 text-emerald-400 font-mono text-xs p-3 rounded-xl border border-slate-800 focus:outline-none resize-none select-all"></textarea>
+          <button id="btnCopyEmbed" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-md flex items-center space-x-1.5 border border-slate-700 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span id="copyStatusText">Copy Snippet</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400">Copy and paste this HTML snippet into your web page or platform editor.</p>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Custom URL Stream Modal -->
+  <div id="urlModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-base">Load Video / YouTube / HLS</h3>
+        <button id="btnCloseUrlModal" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs text-slate-300">URL (YouTube Link, MP4, WebM, or .m3u8 HLS):</label>
+        <input type="url" id="customUrlInput" placeholder="https://www.youtube.com/watch?v=... or https://..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+      </div>
+
+      <button id="btnLoadCustomUrl" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-lg text-sm transition">
+        Load Video
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Keyboard Shortcuts Guide Modal -->
+  <div id="shortcutsModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-slate-100 text-base flex items-center space-x-2">
+          <i data-lucide="keyboard" class="w-4 h-4 text-brand-500"></i>
+          <span>Keyboard Hotkeys</span>
+        </h3>
+        <button id="btnCloseShortcuts" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Play / Pause</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">Space / K</kbd>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Fullscreen</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">F</kbd>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Mute / Unmute</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">M</kbd>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Seek -5s / +5s</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">← / →</kbd>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Volume Up/Down</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">↑ / ↓</kbd>
+        </div>
+        <div class="flex justify-between p-2 rounded bg-slate-800/40">
+          <span class="text-slate-400">Seek 10% - 90%</span>
+          <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-slate-200 font-mono">0 - 9</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Video Sample Catalog
+    const VIDEO_SOURCES = {
+      big_buck_bunny: {
+        type: "html5",
+        title: "Big Buck Bunny",
+        desc: "Open-source animated feature film by Blender Foundation. High definition direct MP4 stream.",
+        url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        subtitles: [
+          { start: 1, end: 4, text: "Welcome to Big Buck Bunny!" },
+          { start: 5, end: 9, text: "A large and lovable rabbit awakens on a sunny morning..." }
+        ]
+      },
+      oceans: {
+        type: "html5",
+        title: "Oceans World",
+        desc: "High definition ocean wildlife sample stream with CORS enabled.",
+        url: "https://vjs.zencdn.net/v/oceans.mp4",
+        subtitles: [
+          { start: 1, end: 5, text: "Explore the deep mystery of blue oceans..." },
+          { start: 6, end: 12, text: "Home to millions of breathtaking aquatic species." }
+        ]
+      },
+      sintel: {
+        type: "html5",
+        title: "Sintel Open Movie Trailer",
+        desc: "Official W3C sample video stream with standard cross-origin headers.",
+        url: "https://media.w3.org/2010/05/sintel/trailer.mp4",
+        subtitles: [
+          { start: 1, end: 4, text: "Sintel - An open source animated adventure." }
+        ]
+      },
+      yt_tears_of_steel: {
+        type: "youtube",
+        ytId: "M7lc1UVf-VE",
+        title: "YouTube Developer Sample",
+        desc: "Official YouTube API embed test video.",
+        url: "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+        subtitles: [
+          { start: 1, end: 5, text: "YouTube API Embed Test Stream" }
+        ]
+      },
+      yt_lofi: {
+        type: "youtube",
+        ytId: "EngW7tLk6R8",
+        title: "Big Buck Bunny (YouTube HD)",
+        desc: "Open source Blender animation video stream on YouTube.",
+        url: "https://www.youtube.com/watch?v=EngW7tLk6R8",
+        subtitles: []
+      },
+      hls_stream: {
+        type: "hls",
+        title: "HLS Live Stream Demo",
+        desc: "HTTP Live Streaming (.m3u8 format) parsed via Hls.js engine.",
+        url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+        subtitles: []
+      }
+    };
+
+    const video = document.getElementById('mainVideo');
+    const ytPlayerWrapper = document.getElementById('ytPlayerWrapper');
+    const ytFallbackIframe = document.getElementById('ytFallbackIframe');
+    const playerContainer = document.getElementById('playerContainer');
+    const controlsContainer = document.getElementById('controlsContainer');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const seekBar = document.getElementById('seekBar');
+    const progressBar = document.getElementById('progressBar');
+    const bufferBar = document.getElementById('bufferBar');
+    const currentTimeEl = document.getElementById('currentTime');
+    const durationEl = document.getElementById('duration');
+    const btnMute = document.getElementById('btnMute');
+    const iconVolumeHigh = document.getElementById('iconVolumeHigh');
+    const iconVolumeMute = document.getElementById('iconVolumeMute');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const iconFullscreen = document.getElementById('iconFullscreen');
+    const iconMinimize = document.getElementById('iconMinimize');
+    const btnPip = document.getElementById('btnPip');
+    const btnRewind = document.getElementById('btnRewind');
+    const btnForward = document.getElementById('btnForward');
+    const seekTooltip = document.getElementById('seekTooltip');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorOverlay = document.getElementById('errorOverlay');
+    const errorTitle = document.getElementById('errorTitle');
+    const errorMessage = document.getElementById('errorMessage');
+    const actionIndicator = document.getElementById('actionIndicator');
+    const actionIcon = document.getElementById('actionIcon');
+    const subtitleOverlay = document.getElementById('subtitleOverlay');
+    const subtitleText = document.getElementById('subtitleText');
+    const btnCaptions = document.getElementById('btnCaptions');
+    const ccIndicator = document.getElementById('ccIndicator');
+    const btnSpeedMenu = document.getElementById('btnSpeedMenu');
+    const speedDropdown = document.getElementById('speedDropdown');
+    const speedLabel = document.getElementById('speedLabel');
+    const videoSelect = document.getElementById('videoSelect');
+
+    // State Variables
+    let hls = null;
+    let ytPlayer = null;
+    let ytReady = false;
+    let isYouTubeMode = false;
+    let ytTicker = null;
+    let pendingYtId = null;
+    let currentKey = 'big_buck_bunny';
+    let currentYtId = null;
+    let controlsTimeout = null;
+    let subtitlesEnabled = false;
+    let currentSubtitles = [];
+
+    // Safe Storage Wrapper (Prevents crashes in sandboxed iframe environments like Google Sites)
+    const SafeStorage = {
+      memoryCache: {},
+      getItem(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          return this.memoryCache[key] || null;
+        }
+      },
+      setItem(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {
+          this.memoryCache[key] = value;
+        }
+      },
+      removeItem(key) {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          delete this.memoryCache[key];
+        }
+      }
+    };
+
+    // AdShield & Ad-Blocker Engine
+    let adShieldEnabled = true;
+    let blockedAdsCount = 0;
+
+    function initAdShield() {
+      // Intercept popup attempts commonly triggered by embedded ad networks
+      try {
+        const originalOpen = window.open;
+        window.open = function(url, target, features) {
+          if (adShieldEnabled) {
+            blockedAdsCount++;
+            updateAdShieldUI();
+            console.log("OmniPlayer AdShield blocked an unrequested popup:", url);
+            return null;
+          }
+          return originalOpen.apply(window, arguments);
+        };
+      } catch (e) {}
+    }
+
+    function sanitizeAdFreeUrl(rawUrl) {
+      if (!rawUrl) return rawUrl;
+      if (!adShieldEnabled) return rawUrl;
+
+      try {
+        let cleanUrl = rawUrl;
+        // Strip common ad tracking query parameters
+        const urlObj = new URL(rawUrl);
+        const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'gclid', 'fbclid', 'si', 'feature'];
+        trackingParams.forEach(param => urlObj.searchParams.delete(param));
+        cleanUrl = urlObj.toString();
+
+        return cleanUrl;
+      } catch (e) {
+        return rawUrl;
+      }
+    }
+
+    function toggleAdShield() {
+      adShieldEnabled = !adShieldEnabled;
+      updateAdShieldUI();
+    }
+
+    function updateAdShieldUI() {
+      const btn = document.getElementById('btnToggleAdShield');
+      if (!btn) return;
+      if (adShieldEnabled) {
+        btn.className = "bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-400 border border-emerald-500/40 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition";
+        btn.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i><span class="hidden lg:inline text-xs font-semibold">AdShield On</span>`;
+      } else {
+        btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700/80 px-2.5 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition";
+        btn.innerHTML = `<i data-lucide="shield-off" class="w-4 h-4 text-slate-400"></i><span class="hidden lg:inline text-xs font-semibold">AdShield Off</span>`;
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    const PROGRESS_STORAGE_KEY = 'omniplayer_video_memory_v1';
+    let pendingResumeTime = 0;
+    let progressSaveTimer = null;
+
+    function getAllSavedProgress() {
+      try {
+        const raw = SafeStorage.getItem(PROGRESS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveCurrentVideoProgress() {
+      const cur = getCurrentTime();
+      const dur = getDuration();
+      if (!cur || !dur || dur < 5 || cur < 2) return;
+
+      const memory = getAllSavedProgress();
+      const videoData = VIDEO_SOURCES[currentKey] || {};
+      
+      memory[currentKey] = {
+        key: currentKey,
+        title: videoData.title || document.getElementById('videoTitleDisplay').textContent || 'Custom Video',
+        timestamp: cur,
+        duration: dur,
+        percent: Math.min(100, Math.round((cur / dur) * 100)),
+        lastUpdated: Date.now()
+      };
+
+      SafeStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(memory));
+      renderMemoryHistoryList();
+    }
+
+    function checkAndPromptResume(key) {
+      const memory = getAllSavedProgress();
+      const record = memory[key];
+      const resumeBanner = document.getElementById('resumeBanner');
+      const resumeTimeText = document.getElementById('resumeTimeText');
+
+      if (record && record.timestamp > 5 && (record.duration - record.timestamp > 10)) {
+        pendingResumeTime = record.timestamp;
+        resumeTimeText.textContent = formatTime(record.timestamp);
+        
+        resumeBanner.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+        resumeBanner.classList.add('opacity-100', 'translate-y-0');
+
+        // Auto dismiss resume toast after 8 seconds
+        setTimeout(() => hideResumeBanner(), 8000);
+      } else {
+        hideResumeBanner();
+      }
+    }
+
+    function hideResumeBanner() {
+      const resumeBanner = document.getElementById('resumeBanner');
+      if (resumeBanner) {
+        resumeBanner.classList.remove('opacity-100', 'translate-y-0');
+        resumeBanner.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }
+    }
+
+    function renderMemoryHistoryList() {
+      const container = document.getElementById('memoryHistoryList');
+      if (!container) return;
+
+      const memory = getAllSavedProgress();
+      const keys = Object.keys(memory).sort((a, b) => memory[b].lastUpdated - memory[a].lastUpdated);
+
+      if (keys.length === 0) {
+        container.innerHTML = `<div class="text-slate-500 text-center py-3 italic text-[11px]">No saved progress yet. Play a video to record memory!</div>`;
+        return;
+      }
+
+      container.innerHTML = keys.map(k => {
+        const item = memory[k];
+        const isCurrent = k === currentKey;
+        return `
+          <div class="p-2 rounded-xl bg-slate-900/80 border ${isCurrent ? 'border-brand-500/50' : 'border-slate-800'} hover:border-brand-500/30 transition flex flex-col gap-1">
+            <div class="flex items-center justify-between text-slate-200">
+              <span class="font-semibold truncate max-w-[140px] text-[11px]">${item.title}</span>
+              <button onclick="jumpToMemoryKey('${item.key}', ${item.timestamp})" class="text-[10px] text-brand-400 hover:text-brand-300 font-medium px-1.5 py-0.5 bg-brand-500/10 rounded transition cursor-pointer">
+                Resume ${formatTime(item.timestamp)}
+              </button>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div class="bg-brand-500 h-full rounded-full" style="width: ${item.percent}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.jumpToMemoryKey = function(key, timestamp) {
+      if (key !== currentKey) {
+        loadVideoKey(key);
+      }
+      setTimeout(() => {
+        setCurrentTime(timestamp);
+        hideResumeBanner();
+      }, 400);
+    };
+
+    function clearAllWatchMemory() {
+      SafeStorage.removeItem(PROGRESS_STORAGE_KEY);
+      renderMemoryHistoryList();
+      hideResumeBanner();
+    }
+
+    // Helper to parse YouTube Video ID
+    function extractYouTubeId(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    window.onYouTubeIframeAPIReady = function() {
+      try {
+        ytPlayer = new YT.Player('ytPlayer', {
+          height: '100%',
+          width: '100%',
+          playerVars: {
+            controls: 1,
+            rel: 0,
+            showinfo: 0,
+            modestbranding: 1,
+            playsinline: 1,
+            enablejsapi: 1
+          },
+          events: {
+            onReady: onYouTubePlayerReady,
+            onStateChange: onYouTubePlayerStateChange,
+            onError: onYouTubePlayerError
+          }
+        });
+      } catch (err) {
+        console.warn("YouTube Player API deferred:", err);
+      }
+    };
+
+    function onYouTubePlayerReady() {
+      ytReady = true;
+      if (pendingYtId) {
+        loadYouTubeVideo(pendingYtId);
+        pendingYtId = null;
+      }
+    }
+
+    function onYouTubePlayerStateChange(event) {
+      if (!isYouTubeMode) return;
+      if (event.data === YT.PlayerState.PLAYING) {
+        showPauseIcon(true);
+        hideErrorOverlay();
+        loadingSpinner.classList.add('opacity-0');
+        startYouTubeTicker();
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        showPauseIcon(false);
+        stopYouTubeTicker();
+      } else if (event.data === YT.PlayerState.BUFFERING) {
+        loadingSpinner.classList.remove('opacity-0');
+      } else if (event.data === YT.PlayerState.ENDED) {
+        showPauseIcon(false);
+        stopYouTubeTicker();
+      }
+    }
+
+    function onYouTubePlayerError(e) {
+      console.warn("YouTube API restricted in sandboxed frame, invoking iframe fallback:", e);
+      if (currentYtId) {
+        useDirectYouTubeIframe(currentYtId);
+      }
+    }
+
+    function useDirectYouTubeIframe(ytId) {
+      const ytPlayerDiv = document.getElementById('ytPlayer');
+      if (ytPlayerDiv) ytPlayerDiv.classList.add('hidden');
+      if (ytFallbackIframe) {
+        // Enforce youtube-nocookie.com embed endpoint for privacy and ad shielding
+        const sanitizedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&controls=1&rel=0&iv_load_policy=3&enablejsapi=1`;
+        ytFallbackIframe.src = sanitizedUrl;
+        ytFallbackIframe.classList.remove('hidden');
+      }
+      hideErrorOverlay();
+      loadingSpinner.classList.add('opacity-0');
+    }
+
+    function startYouTubeTicker() {
+      stopYouTubeTicker();
+      ytTicker = setInterval(() => {
+        if (isYouTubeMode) {
+          updateProgress();
+        }
+      }, 250);
+    }
+
+    function stopYouTubeTicker() {
+      if (ytTicker) {
+        clearInterval(ytTicker);
+        ytTicker = null;
+      }
+    }
+
+    function initPlayer() {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+      initAdShield();
+      renderMemoryHistoryList();
+      loadVideoKey('big_buck_bunny');
+      setupEventListeners();
+    }
+
+    function loadVideoKey(key) {
+      currentKey = key;
+      const data = VIDEO_SOURCES[key];
+      if (!data) return;
+
+      document.getElementById('videoTitleDisplay').textContent = data.title;
+      document.getElementById('videoDescDisplay').textContent = data.desc;
+      currentSubtitles = data.subtitles || [];
+      videoSelect.value = key;
+
+      // Check Watch Memory for saved playback spot
+      checkAndPromptResume(key);
+
+      // Highlight Active Playlist Item
+      document.querySelectorAll('.playlist-item').forEach(item => {
+        if (item.dataset.vid === key) {
+          item.classList.add('bg-slate-800/80', 'border-accent/40');
+          item.classList.remove('border-transparent');
+        } else {
+          item.classList.remove('bg-slate-800/80', 'border-accent/40');
+          item.classList.add('border-transparent');
+        }
+      });
+
+      if (data.type === 'youtube' || data.ytId) {
+        loadYouTubeVideo(data.ytId);
+      } else {
+        loadSourceUrl(data.url);
+      }
+    }
+
+    function loadYouTubeVideo(ytId) {
+      hideErrorOverlay();
+      isYouTubeMode = true;
+      currentYtId = ytId;
+
+      try { video.pause(); } catch(e) {}
+      video.classList.add('hidden');
+      
+      // Bring YouTube wrapper to front (z-30) so clicks go directly to YouTube's player
+      ytPlayerWrapper.classList.remove('hidden');
+      ytPlayerWrapper.classList.add('z-30');
+      
+      // Adjust controls container so it does not block clicks on YouTube's native UI
+      controlsContainer.classList.add('pointer-events-none', 'opacity-0');
+
+      const ytPlayerDiv = document.getElementById('ytPlayer');
+      if (ytFallbackIframe) {
+        ytFallbackIframe.classList.add('hidden');
+        ytFallbackIframe.src = '';
+      }
+      if (ytPlayerDiv) ytPlayerDiv.classList.remove('hidden');
+
+      if (ytReady && ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+        try {
+          ytPlayer.loadVideoById(ytId);
+          resetUI();
+        } catch (err) {
+          useDirectYouTubeIframe(ytId);
+        }
+      } else {
+        pendingYtId = ytId;
+        // Direct fallback iframe embed if API takes too long or is blocked by school domain
+        setTimeout(() => {
+          if (!ytReady && isYouTubeMode) {
+            useDirectYouTubeIframe(ytId);
+          }
+        }, 1000);
+      }
+    }
+
+    function loadSourceUrl(url) {
+      hideErrorOverlay();
+      
+      const cleanUrl = sanitizeAdFreeUrl(url);
+      const parsedYtId = extractYouTubeId(cleanUrl);
+      if (parsedYtId) {
+        loadYouTubeVideo(parsedYtId);
+        return;
+      }
+
+      isYouTubeMode = false;
+      currentYtId = null;
+      stopYouTubeTicker();
+
+      if (ytReady && ytPlayer && typeof ytPlayer.stopVideo === 'function') {
+        try { ytPlayer.stopVideo(); } catch(e) {}
+      }
+
+      ytPlayerWrapper.classList.add('hidden');
+      ytPlayerWrapper.classList.remove('z-30');
+      
+      video.classList.remove('hidden');
+      controlsContainer.classList.remove('pointer-events-none', 'opacity-0');
+
+      try { video.pause(); } catch(e) {}
+
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+
+      if (cleanUrl.includes('.m3u8')) {
+        if (window.Hls && Hls.isSupported()) {
+          hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+          hls.loadSource(cleanUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+              showErrorOverlay("HLS Stream Error", "Failed to load or parse HLS live playlist.");
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = cleanUrl;
+        } else {
+          showErrorOverlay("HLS Unsupported", "Your browser does not support HLS streaming.");
+          return;
+        }
+      } else {
+        video.src = cleanUrl;
+      }
+
+      video.load();
+      resetUI();
+    }
+
+    function hideErrorOverlay() {
+      if (errorOverlay) {
+        errorOverlay.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function showErrorOverlay(title, msg) {
+      if (errorTitle) errorTitle.textContent = title;
+      if (errorMessage) errorMessage.textContent = msg;
+      if (errorOverlay) {
+        errorOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function getCurrentTime() {
+      if (isYouTubeMode && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+        try { return ytPlayer.getCurrentTime() || 0; } catch(e) { return 0; }
+      }
+      return video ? (video.currentTime || 0) : 0;
+    }
+
+    function getDuration() {
+      if (isYouTubeMode && ytPlayer && typeof ytPlayer.getDuration === 'function') {
+        try { return ytPlayer.getDuration() || 0; } catch(e) { return 0; }
+      }
+      return video ? (video.duration || 0) : 0;
+    }
+
+    function setCurrentTime(t) {
+      if (isYouTubeMode && ytPlayer && typeof ytPlayer.seekTo === 'function') {
+        try { ytPlayer.seekTo(t, true); } catch(e) {}
+      } else if (video) {
+        video.currentTime = t;
+      }
+    }
+
+    function formatTime(sec) {
+      if (isNaN(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function resetUI() {
+      if (seekBar) seekBar.value = 0;
+      if (progressBar) progressBar.style.width = '0%';
+      if (bufferBar) bufferBar.style.width = '0%';
+      if (currentTimeEl) currentTimeEl.textContent = '0:00';
+      if (durationEl) durationEl.textContent = '0:00';
+      showPauseIcon(false);
+    }
+
+    function togglePlay() {
+      if (isYouTubeMode) {
+        if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+          const state = ytPlayer.getPlayerState();
+          if (state === YT.PlayerState.PLAYING) {
+            ytPlayer.pauseVideo();
+            showPauseIcon(false);
+          } else {
+            ytPlayer.playVideo();
+            showPauseIcon(true);
+          }
+        }
+      } else if (video) {
+        if (video.paused) {
+          video.play().then(() => showPauseIcon(true)).catch(err => {
+            console.warn("Autoplay/play blocked:", err);
+            video.muted = true;
+            video.play().then(() => showPauseIcon(true)).catch(e => console.error(e));
+          });
+        } else {
+          video.pause();
+          showPauseIcon(false);
+        }
+      }
+    }
+
+    function showPauseIcon(isPlaying) {
+      if (iconPlay && iconPause) {
+        if (isPlaying) {
+          iconPlay.classList.add('hidden');
+          iconPause.classList.remove('hidden');
+        } else {
+          iconPlay.classList.remove('hidden');
+          iconPause.classList.add('hidden');
+        }
+      }
+      if (actionIcon) {
+        actionIcon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateProgress() {
+      const cur = getCurrentTime();
+      const dur = getDuration();
+
+      if (!dur) return;
+      const pct = (cur / dur) * 100;
+      seekBar.value = pct;
+      progressBar.style.width = `${pct}%`;
+      currentTimeEl.textContent = formatTime(cur);
+      durationEl.textContent = formatTime(dur);
+
+      // Throttle memory saving to every 2 seconds during playback
+      if (Math.abs(cur - (window.lastSavedTimestamp || 0)) > 2) {
+        window.lastSavedTimestamp = cur;
+        saveCurrentVideoProgress();
+      }
+
+      if (isYouTubeMode && ytPlayer && typeof ytPlayer.getVideoLoadedFraction === 'function') {
+        bufferBar.style.width = `${ytPlayer.getVideoLoadedFraction() * 100}%`;
+      } else if (video.buffered && video.buffered.length > 0) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        bufferBar.style.width = `${(bufferedEnd / dur) * 100}%`;
+      }
+
+      if (subtitlesEnabled && currentSubtitles.length) {
+        const sub = currentSubtitles.find(s => cur >= s.start && cur <= s.end);
+        if (sub) {
+          subtitleText.textContent = sub.text;
+          subtitleText.classList.remove('hidden');
+        } else {
+          subtitleText.classList.add('hidden');
+        }
+      } else {
+        subtitleText.classList.add('hidden');
+      }
+    }
+
+    function setupEventListeners() {
+      video.addEventListener('play', () => showPauseIcon(true));
+      video.addEventListener('pause', () => showPauseIcon(false));
+      video.addEventListener('timeupdate', updateProgress);
+      video.addEventListener('loadedmetadata', () => durationEl.textContent = formatTime(video.duration));
+
+      document.getElementById('btnToggleAdShield').addEventListener('click', toggleAdShield);
+      document.getElementById('btnClearMemory').addEventListener('click', clearAllWatchMemory);
+
+      document.getElementById('btnConfirmResume').addEventListener('click', () => {
+        if (pendingResumeTime > 0) {
+          setCurrentTime(pendingResumeTime);
+          hideResumeBanner();
+        }
+      });
+
+      document.getElementById('btnDismissResume').addEventListener('click', hideResumeBanner);
+
+      document.getElementById('btnRetryLoad').addEventListener('click', () => loadVideoKey(currentKey));
+      document.getElementById('btnLoadFallback').addEventListener('click', () => loadVideoKey('big_buck_bunny'));
+
+      video.addEventListener('waiting', () => loadingSpinner.classList.remove('opacity-0'));
+      video.addEventListener('canplay', () => {
+        loadingSpinner.classList.add('opacity-0');
+        hideErrorOverlay();
+      });
+
+      video.addEventListener('click', togglePlay);
+      btnPlayPause.addEventListener('click', togglePlay);
+
+      seekBar.addEventListener('input', (e) => {
+        const dur = getDuration();
+        const seekTo = (e.target.value / 100) * dur;
+        setCurrentTime(seekTo);
+      });
+
+      seekBar.addEventListener('mousemove', (e) => {
+        const rect = seekBar.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        const targetTime = pos * getDuration();
+        seekTooltip.textContent = formatTime(targetTime);
+        seekTooltip.style.left = `${Math.max(10, Math.min(rect.width - 20, e.clientX - rect.left))}px`;
+        seekTooltip.classList.remove('opacity-0');
+      });
+
+      seekBar.addEventListener('mouseleave', () => seekTooltip.classList.add('opacity-0'));
+
+      btnRewind.addEventListener('click', () => setCurrentTime(Math.max(0, getCurrentTime() - 10)));
+      btnForward.addEventListener('click', () => setCurrentTime(Math.min(getDuration(), getCurrentTime() + 10)));
+
+      volumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (isYouTubeMode && ytPlayer && typeof ytPlayer.setVolume === 'function') {
+          ytPlayer.setVolume(val * 100);
+          if (val === 0) ytPlayer.mute(); else ytPlayer.unMute();
+        } else {
+          video.volume = val;
+          video.muted = (val === 0);
+        }
+        updateVolumeIcon(val === 0);
+      });
+
+      btnMute.addEventListener('click', () => {
+        if (isYouTubeMode && ytPlayer && typeof ytPlayer.isMuted === 'function') {
+          if (ytPlayer.isMuted()) {
+            ytPlayer.unMute();
+            updateVolumeIcon(false);
+          } else {
+            ytPlayer.mute();
+            updateVolumeIcon(true);
+          }
+        } else {
+          video.muted = !video.muted;
+          updateVolumeIcon(video.muted);
+        }
+      });
+
+      function updateVolumeIcon(isMuted) {
+        if (isMuted) {
+          iconVolumeHigh.classList.add('hidden');
+          iconVolumeMute.classList.remove('hidden');
+        } else {
+          iconVolumeHigh.classList.remove('hidden');
+          iconVolumeMute.classList.add('hidden');
+        }
+      }
+
+      btnFullscreen.addEventListener('click', toggleFullscreen);
+
+      function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          playerContainer.requestFullscreen().catch(err => console.warn(err.message));
+        } else {
+          document.exitFullscreen();
+        }
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+          iconFullscreen.classList.add('hidden');
+          iconMinimize.classList.remove('hidden');
+        } else {
+          iconFullscreen.classList.remove('hidden');
+          iconMinimize.classList.add('hidden');
+        }
+      });
+
+      btnPip.addEventListener('click', async () => {
+        try {
+          if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+          } else if (!isYouTubeMode) {
+            await video.requestPictureInPicture();
+          } else {
+            showErrorOverlay("Picture in Picture", "Picture-in-Picture for YouTube streams is handled natively via the YouTube player menu.");
+          }
+        } catch (e) { console.error(e); }
+      });
+
+      btnCaptions.addEventListener('click', () => {
+        subtitlesEnabled = !subtitlesEnabled;
+        if (subtitlesEnabled) {
+          ccIndicator.classList.remove('hidden');
+          btnCaptions.classList.add('text-accent');
+        } else {
+          ccIndicator.classList.add('hidden');
+          btnCaptions.classList.remove('text-accent');
+          subtitleText.classList.add('hidden');
+        }
+      });
+
+      btnSpeedMenu.addEventListener('click', () => speedDropdown.classList.toggle('hidden'));
+      document.querySelectorAll('.speed-opt').forEach(opt => {
+        opt.addEventListener('click', (e) => {
+          const spd = parseFloat(e.target.dataset.speed);
+          if (isYouTubeMode && ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
+            ytPlayer.setPlaybackRate(spd);
+          } else {
+            video.playbackRate = spd;
+          }
+          speedLabel.textContent = spd === 1 ? '1x' : `${spd}x`;
+          speedDropdown.classList.add('hidden');
+        });
+      });
+
+      playerContainer.addEventListener('mousemove', () => {
+        if (!isYouTubeMode) {
+          controlsContainer.classList.remove('opacity-0');
+          playerContainer.classList.remove('hide-cursor');
+          clearTimeout(controlsTimeout);
+          controlsTimeout = setTimeout(() => {
+            controlsContainer.classList.add('opacity-0');
+            playerContainer.classList.add('hide-cursor');
+          }, 2500);
+        }
+      });
+
+      videoSelect.addEventListener('change', (e) => loadVideoKey(e.target.value));
+
+      document.querySelectorAll('.playlist-item').forEach(item => {
+        item.addEventListener('click', () => loadVideoKey(item.dataset.vid));
+      });
+
+      document.querySelectorAll('.btn-jump').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const t = parseFloat(e.currentTarget.dataset.jump);
+          setCurrentTime(t);
+        });
+      });
+
+      document.getElementById('fileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const fileUrl = URL.createObjectURL(file);
+          document.getElementById('videoTitleDisplay').textContent = file.name;
+          document.getElementById('videoDescDisplay').textContent = "Loaded from local file";
+          loadSourceUrl(fileUrl);
+        }
+      });
+
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.body.className = `bg-slate-950 text-slate-100 min-h-screen flex flex-col ${e.target.dataset.theme} antialiased overflow-x-hidden`;
+        });
+      });
+
+      setupModals();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'f':
+          e.preventDefault();
+          btnFullscreen.click();
+          break;
+        case 'm':
+          e.preventDefault();
+          btnMute.click();
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          setCurrentTime(Math.max(0, getCurrentTime() - 5));
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          setCurrentTime(Math.min(getDuration(), getCurrentTime() + 5));
+          break;
+      }
+    });
+
+    function setupModals() {
+      const embedModal = document.getElementById('embedModal');
+      const urlModal = document.getElementById('urlModal');
+      const shortcutsModal = document.getElementById('shortcutsModal');
+
+      document.getElementById('btnOpenEmbedModal').addEventListener('click', () => {
+        updateEmbedSnippet();
+        embedModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btnCloseEmbedModal').addEventListener('click', () => embedModal.classList.add('hidden'));
+      document.getElementById('btnOpenUrlModal').addEventListener('click', () => urlModal.classList.remove('hidden'));
+      document.getElementById('btnCloseUrlModal').addEventListener('click', () => urlModal.classList.add('hidden'));
+      document.getElementById('btnOpenShortcuts').addEventListener('click', () => shortcutsModal.classList.remove('hidden'));
+      document.getElementById('btnCloseShortcuts').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+
+      document.getElementById('btnLoadCustomUrl').addEventListener('click', () => {
+        const url = document.getElementById('customUrlInput').value.trim();
+        if (url) {
+          const ytId = extractYouTubeId(url);
+          document.getElementById('videoTitleDisplay').textContent = ytId ? "YouTube Stream" : "Custom Stream Source";
+          document.getElementById('videoDescDisplay').textContent = url;
+          if (ytId) loadYouTubeVideo(ytId); else loadSourceUrl(url);
+          urlModal.classList.add('hidden');
+        }
+      });
+
+      ['embedAutoplay', 'embedMuted', 'embedControls'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateEmbedSnippet);
+      });
+
+      document.getElementById('btnCopyEmbed').addEventListener('click', () => {
+        const textarea = document.getElementById('embedCodeTextarea');
+        textarea.select();
+        document.execCommand('copy');
+        
+        const statusText = document.getElementById('copyStatusText');
+        statusText.textContent = "Copied!";
+        setTimeout(() => statusText.textContent = "Copy Snippet", 2000);
+      });
+    }
+
+    function updateEmbedSnippet() {
+      const isAutoplay = document.getElementById('embedAutoplay').checked;
+      const isMuted = document.getElementById('embedMuted').checked;
+      const hasControls = document.getElementById('embedControls').checked;
+      
+      let code = "";
+      if (isYouTubeMode && currentYtId) {
+        code = `<iframe width="100%" height="100%" style="min-height:360px; width:100%;" src="https://www.youtube-nocookie.com/embed/${currentYtId}?autoplay=${isAutoplay ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=${hasControls ? 1 : 0}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      } else {
+        const videoUrl = VIDEO_SOURCES[currentKey] ? VIDEO_SOURCES[currentKey].url : video.src;
+        code = `<iframe src="${videoUrl}" width="100%" height="100%" style="min-height:360px; width:100%;" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" ${isMuted ? 'muted' : ''} ${hasControls ? 'controls' : ''} allowfullscreen></iframe>`;
+      }
+      document.getElementById('embedCodeTextarea').value = code;
+    }
+
+    window.onload = initPlayer;
+  </script>
+</body>
+</html>
