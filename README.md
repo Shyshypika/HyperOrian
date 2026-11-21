@@ -15,4 +15,6 @@ DuckDuckGo Support has not come to HyperOrain
 I will try to add An AI on it
 Your can only cloak icons
 
-
+# Orion Ai uses puter.js 
+Which may request u to sign in or create a account 
+it is mostly free but if you yap too much u will need to pay money$$$
