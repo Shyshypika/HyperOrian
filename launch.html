@@ -7,56 +7,316 @@
   <title>Launch HyperOrian</title>
   <link id="tabIcon" rel="icon" href="Icons/Logo.png" type="image/png">
   <style>
-    :root { color-scheme: dark; --bg: #10131e; --panel: #191e2d; --text: #f4f6ff; --muted: #aab2c8; --accent: #b6aaff; --water: #73d8ff; }
+    :root {
+      color-scheme: dark;
+      --bg: #10131e;
+      --panel: #191e2ddd;
+      --text: #f4f6ff;
+      --muted: #aab2c8;
+      --accent: #b6aaff;
+      --accent-glow: #28234d;
+      --water: #73d8ff;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; color: var(--text); background: radial-gradient(ellipse at 50% 18%, #28234d 0, transparent 48%), var(--bg); font: 16px/1.5 system-ui, sans-serif; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: radial-gradient(ellipse at 50% 18%, var(--accent-glow) 0, transparent 52%), var(--bg);
+      font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transition: background 0.4s ease, color 0.3s ease;
+    }
     button, input, select { font: inherit; }
     button { cursor: pointer; }
     .shell { width: min(1050px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 42px; }
     .brand { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--muted); font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; }
     .brand img { width: 36px; height: 36px; object-fit: contain; }
-    .card { position: relative; overflow: hidden; min-height: 540px; padding: clamp(24px, 5vw, 52px); border: 1px solid #ffffff17; border-radius: 28px; background: #191e2ddd; box-shadow: 0 24px 80px #0005; }
+    .card {
+      position: relative;
+      overflow: hidden;
+      min-height: 540px;
+      padding: clamp(24px, 5vw, 52px);
+      border: 1px solid #ffffff17;
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px #0005;
+      backdrop-filter: blur(12px);
+    }
     .stage { display: none; text-align: center; }
-    .stage.active { display: block; animation: appear .45s ease both; }
-    @keyframes appear { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .stage.active { display: block; animation: appear .5s cubic-bezier(.16, 1, .3, 1) both; }
+    @keyframes appear { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
     h1 { margin: 4px 0 10px; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.08; letter-spacing: -.05em; }
     h2 { margin: 0 0 8px; font-size: 1.45rem; }
     p { color: var(--muted); }
     .lead { max-width: 580px; margin: 0 auto 22px; }
     .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: .75rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
     .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
-    .btn { min-height: 48px; padding: 10px 20px; border: 1px solid #ffffff20; border-radius: 13px; color: var(--text); background: #ffffff0b; font-weight: 700; transition: .2s ease; }
-    .btn:hover, .btn:focus-visible { transform: translateY(-2px); border-color: #b6aaff88; outline: 2px solid #b6aaff55; outline-offset: 2px; }
-    .btn.primary { color: #171326; border-color: transparent; background: var(--accent); }
-    .btn.primary:hover { background: #c9c0ff; }
+    .btn {
+      min-height: 48px;
+      padding: 10px 22px;
+      border: 1px solid #ffffff20;
+      border-radius: 13px;
+      color: var(--text);
+      background: #ffffff0b;
+      font-weight: 700;
+      transition: .2s ease;
+    }
+    .btn:hover, .btn:focus-visible { transform: translateY(-2px); border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+    .btn.primary { color: #12101c; border-color: transparent; background: var(--accent); }
+    .btn.primary:hover { filter: brightness(1.1); }
     .btn:disabled { cursor: wait; opacity: .6; transform: none; }
-    .back { display: inline-block; margin-top: 22px; color: var(--muted); font-size: .9rem; text-decoration: none; }
-    .back:hover { color: white; }
-    .rocket-scene { position: relative; height: 240px; max-width: 600px; margin: 0 auto 4px; overflow: hidden; border-radius: 20px; background: radial-gradient(ellipse at 50% 100%, #38326566, transparent 60%); }
-    .rocket { position: absolute; z-index: 2; left: 50%; bottom: 17px; font-size: 56px; transform: translateX(-50%) rotate(-42deg); animation: blast 3.7s cubic-bezier(.5,0,.4,1) .25s both; }
-    @keyframes blast { 0%, 12% { transform: translate(-50%, 0) rotate(-42deg); opacity: 1; } 70% { transform: translate(35px, -185px) rotate(-42deg); opacity: 1; } 100% { transform: translate(55px, -260px) rotate(-42deg); opacity: 0; } }
-    .flame { position: absolute; width: 15px; height: 58px; left: calc(50% - 7px); bottom: 0; border-radius: 50%; background: linear-gradient(#fff5b0, #ff994d 45%, transparent); filter: blur(2px); transform: rotate(42deg); animation: flame .18s ease-in-out infinite alternate; }
-    @keyframes flame { to { height: 82px; opacity: .65; } }
-    .code { position: absolute; z-index: 1; left: 50%; bottom: 28px; color: #9df2c5; font: 700 12px/1.7 ui-monospace, monospace; opacity: 0; white-space: pre; animation: codeburst 2s ease-out 1s both; }
-    @keyframes codeburst { 0% { opacity: 0; transform: translate(-50%, 0) scale(.5); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -145px) scale(1.3); filter: blur(5px); } }
-    .water-drop { position: absolute; top: 38%; left: 50%; width: 13px; height: 19px; border-radius: 60% 40% 60% 60%; background: linear-gradient(135deg, #c2f7ff, #42baf2); opacity: 0; box-shadow: 0 0 18px #42baf288; animation: fall 1.3s ease-in 2.6s both; }
-    @keyframes fall { 0% { opacity: 0; transform: translate(-50%, -75px) scale(.4); } 20% { opacity: .95; } 100% { opacity: .1; transform: translate(-50%, 110px) scale(1.2); } }
-    .cloud { position: absolute; left: 50%; top: 42px; width: 160px; height: 42px; border-radius: 50%; background: #abb9ff18; filter: blur(9px); transform: translateX(-50%); }
-    .form { max-width: 660px; margin: 24px auto 0; text-align: left; }
+    .back { display: inline-block; margin-top: 22px; color: var(--muted); font-size: .9rem; text-decoration: none; transition: color .2s; }
+    .back:hover { color: var(--text); }
+
+    /* Enhanced Intro Rocket & Orbit Animation (~6.5s sequence) */
+    .rocket-scene {
+      position: relative;
+      height: 270px;
+      max-width: 640px;
+      margin: 0 auto 12px;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid #ffffff12;
+      background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 65%), #0c0e17;
+    }
+    .stars {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(1.5px 1.5px at 15% 25%, #fff 80%, transparent),
+        radial-gradient(2px 2px at 78% 18%, var(--accent) 80%, transparent),
+        radial-gradient(1.5px 1.5px at 32% 68%, #fff 80%, transparent),
+        radial-gradient(2px 2px at 84% 62%, var(--water) 80%, transparent),
+        radial-gradient(1px 1px at 58% 35%, #fff 80%, transparent),
+        radial-gradient(1.5px 1.5px at 22% 82%, #fff 80%, transparent);
+      animation: twinkle 3s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle { from { opacity: .45; } to { opacity: 1; } }
+
+    .orbit-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent);
+      transform: translate(-50%, -50%);
+      animation: spinRing 12s linear infinite;
+    }
+    @keyframes spinRing { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    .launchpad {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 140px;
+      height: 14px;
+      transform: translateX(-50%);
+      border-radius: 8px 8px 0 0;
+      background: linear-gradient(90deg, transparent, #ffffff33, transparent);
+    }
+    .smoke {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      width: 90px;
+      height: 26px;
+      border-radius: 50%;
+      background: #cbd5e144;
+      filter: blur(8px);
+      transform: translateX(-50%) scale(0.4);
+      opacity: 0;
+      animation: smokeBillow 2.2s ease-out 0.6s forwards;
+    }
+    @keyframes smokeBillow {
+      0% { opacity: 0; transform: translateX(-50%) scale(0.4); }
+      35% { opacity: 0.85; transform: translateX(-50%) scale(1.6); }
+      100% { opacity: 0; transform: translateX(-50%) scale(2.8); }
+    }
+
+    .rocket-wrap {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      animation:
+        rumble 0.12s ease-in-out 0.3s 8 alternate,
+        blastOff 4.2s cubic-bezier(.45, 0, .25, 1) 1.2s forwards;
+    }
+    @keyframes rumble {
+      from { transform: translateX(calc(-50% - 2px)); }
+      to { transform: translateX(calc(-50% + 2px)); }
+    }
+    @keyframes blastOff {
+      0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+      25% { transform: translate(-50%, -45px) scale(1.04); opacity: 1; }
+      75% { transform: translate(-50%, -220px) scale(0.95); opacity: 1; }
+      100% { transform: translate(-50%, -330px) scale(0.85); opacity: 0; }
+    }
+    .rocket {
+      display: block;
+      font-size: 58px;
+      line-height: 1;
+      transform: rotate(-45deg);
+      filter: drop-shadow(0 8px 18px #0009);
+    }
+    .flame {
+      position: absolute;
+      left: 50%;
+      top: 52px;
+      width: 18px;
+      height: 68px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: linear-gradient(#ffffff, #fde047 35%, #f97316 70%, transparent);
+      filter: blur(2px);
+      opacity: 0;
+      animation:
+        ignite 0.4s ease-out 0.5s forwards,
+        flicker 0.14s ease-in-out 0.5s infinite alternate;
+    }
+    @keyframes ignite { to { opacity: 1; } }
+    @keyframes flicker { from { height: 60px; transform: translateX(-50%) scaleX(0.9); } to { height: 88px; transform: translateX(-50%) scaleX(1.1); } }
+
+    .code-stream {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      bottom: 40px;
+      color: #9df2c5;
+      font: 700 12px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+      opacity: 0;
+      white-space: pre;
+      text-shadow: 0 0 10px #9df2c566;
+      animation: codeBurst 3.2s ease-out 1.8s forwards;
+    }
+    @keyframes codeBurst {
+      0% { opacity: 0; transform: translate(-50%, 10px) scale(0.6); }
+      25% { opacity: 1; }
+      80% { opacity: 0.85; }
+      100% { opacity: 0; transform: translate(-50%, -175px) scale(1.25); filter: blur(4px); }
+    }
+
+    .water-drop {
+      position: absolute;
+      z-index: 2;
+      top: 22%;
+      left: 50%;
+      width: 14px;
+      height: 20px;
+      border-radius: 60% 40% 60% 60%;
+      background: linear-gradient(135deg, #e0f2fe, #38bdf8);
+      opacity: 0;
+      box-shadow: 0 0 18px #38bdf899;
+      animation: dropFall 1.8s cubic-bezier(.4, 0, .6, 1) 4.1s forwards;
+    }
+    @keyframes dropFall {
+      0% { opacity: 0; transform: translate(-50%, -40px) rotate(-45deg) scale(0.5); }
+      25% { opacity: 1; }
+      85% { opacity: 0.9; transform: translate(-50%, 135px) rotate(-45deg) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, 155px) rotate(-45deg) scale(1.4); }
+    }
+    .ripple {
+      position: absolute;
+      bottom: 34px;
+      left: 50%;
+      width: 24px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--water);
+      transform: translateX(-50%) scale(0.2);
+      opacity: 0;
+      animation: rippleOut 1.1s ease-out 5.5s forwards;
+    }
+    @keyframes rippleOut {
+      0% { opacity: 0.9; transform: translateX(-50%) scale(0.2); }
+      100% { opacity: 0; transform: translateX(-50%) scale(4.5); }
+    }
+
+    .progress-track {
+      max-width: 320px;
+      height: 5px;
+      margin: 16px auto 0;
+      border-radius: 999px;
+      background: #ffffff14;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--water));
+      border-radius: 999px;
+      animation: loadBar 6.2s cubic-bezier(.22, 1, .36, 1) forwards;
+    }
+    @keyframes loadBar { to { width: 100%; } }
+
+    /* Form & Config Options */
+    .form { max-width: 680px; margin: 22px auto 0; text-align: left; }
     .field { display: grid; gap: 7px; margin: 16px 0; }
-    .field label { color: #dce1f2; font-size: .9rem; font-weight: 700; }
+    .field label { color: var(--text); font-size: .9rem; font-weight: 700; }
     .field small, .hint { color: var(--muted); font-size: .82rem; }
-    input, select { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #ffffff24; border-radius: 10px; color: var(--text); background: #10131e; }
-    input:focus, select:focus { outline: 2px solid #b6aaff88; border-color: var(--accent); }
+    input[type="text"], input[type="url"], select {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border: 1px solid #ffffff24;
+      border-radius: 10px;
+      color: var(--text);
+      background: #0d1019;
+    }
+    input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); border-color: var(--accent); }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* Theme Swatches */
+    .themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 4px; }
+    .theme-choice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #ffffff22;
+      border-radius: 12px;
+      background: #ffffff08;
+      color: var(--text);
+      font-size: .85rem;
+      font-weight: 600;
+      text-align: left;
+      transition: .2s ease;
+    }
+    .theme-choice:hover { border-color: #ffffff44; }
+    .theme-choice[aria-pressed="true"] { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .swatch { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; border: 1px solid #ffffff44; }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      border: 1px solid #ffffff18;
+      border-radius: 12px;
+      background: #ffffff06;
+    }
+    .toggle-row span { display: grid; gap: 2px; }
+    .toggle-row strong { font-size: .9rem; color: var(--text); }
+    .toggle-row small { color: var(--muted); font-size: .8rem; }
+    input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+
+    /* Tab Icons */
     .icons { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 4px; }
     .icon-choice { width: 54px; height: 54px; padding: 7px; border: 1px solid #ffffff22; border-radius: 12px; background: #ffffff0b; }
     .icon-choice img { width: 100%; height: 100%; object-fit: contain; }
-    .icon-choice[aria-pressed="true"] { border: 2px solid var(--accent); background: #b6aaff20; }
+    .icon-choice[aria-pressed="true"] { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
     .status { min-height: 28px; margin: 10px auto 0; color: var(--muted); }
     .status.error { color: #ff9aab; }
     .status.success { color: #95efbd; }
-    .water-scene { position: relative; height: 220px; max-width: 600px; margin: 16px auto; overflow: hidden; border-radius: 20px; background: linear-gradient(180deg, #33305b66, #131c2b); }
+
+    /* Network Check Water Animation */
+    .water-scene { position: relative; height: 220px; max-width: 600px; margin: 16px auto; overflow: hidden; border-radius: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, #131c2b), #131c2b); }
     .water-pool { position: absolute; left: 15%; right: 15%; bottom: 22px; height: 12px; border-radius: 50%; background: #4fc4f277; filter: blur(8px); animation: pool 3s ease-in-out infinite; }
     @keyframes pool { 50% { transform: scaleX(.7); opacity: .45; } }
     .vapor { position: absolute; left: 50%; bottom: 26px; width: 80px; height: 100px; border-radius: 50%; background: #9feeff33; filter: blur(15px); animation: evaporate 3.1s ease-in-out infinite; }
@@ -65,15 +325,16 @@
     @keyframes rainfall { 0% { opacity: 0; background-position: 0 -70px; } 25% { opacity: .6; } 100% { opacity: .15; background-position: 0 70px; } }
     .ping { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid #ffffff20; border-radius: 999px; background: #ffffff08; font-size: .9rem; }
     .dot { width: 9px; height: 9px; border-radius: 50%; background: #7de6a8; box-shadow: 0 0 12px #7de6a8; }
-    .render { display: none; margin: -20px; text-align: left; }
-    .render.active { display: block; }
-    .render-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px; border-radius: 14px; background: #10131e; }
-    .render-bar input { flex: 1; min-width: 180px; }
-    .render-bar .btn { min-height: 42px; padding: 7px 13px; }
-    .viewer { width: 100%; height: min(62vh, 620px); min-height: 360px; margin-top: 12px; border: 1px solid #ffffff22; border-radius: 14px; background: white; }
-    .render-note { margin: 8px 2px 0; font-size: .78rem; }
-    @media (max-width: 620px) { .shell { width: min(100% - 20px, 1050px); padding-top: 14px; } .card { min-height: 520px; padding: 22px 16px; border-radius: 20px; } .form-grid { grid-template-columns: 1fr; gap: 0; } .rocket-scene, .water-scene { height: 190px; } .render { margin: 0; } .viewer { min-height: 300px; } }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
+
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 20px, 1050px); padding-top: 14px; }
+      .card { min-height: 520px; padding: 22px 16px; border-radius: 20px; }
+      .form-grid { grid-template-columns: 1fr; gap: 0; }
+      .rocket-scene, .water-scene { height: 210px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -81,68 +342,156 @@
     <div class="brand"><img src="Icons/Logo.png" alt=""><span>HyperOrian launcher</span></div>
     <div class="card">
       <section id="introStage" class="stage active" aria-live="polite">
-        <div class="rocket-scene" aria-hidden="true"><div class="cloud"></div><div class="flame"></div><div class="rocket">🚀</div><div class="code">&lt;html&gt;  fetch()  010101<br>worker.dev  launch()  &lt;/&gt;</div><div class="water-drop"></div></div>
+        <div class="rocket-scene" aria-hidden="true">
+          <div class="stars"></div>
+          <div class="orbit-ring"></div>
+          <div class="launchpad"></div>
+          <div class="smoke"></div>
+          <div class="rocket-wrap">
+            <span class="rocket">🚀</span>
+            <div class="flame"></div>
+          </div>
+          <div class="code-stream">&lt;html&gt;  initWorker()  010110<br>verifyTLS()  handshake()  &lt;/&gt;</div>
+          <div class="water-drop"></div>
+          <div class="ripple"></div>
+        </div>
         <p class="eyebrow">Preparing for launch</p>
         <h1>HyperOrian is taking off</h1>
-        <p class="lead">A little code, a little water, and your browser is ready for liftoff.</p>
+        <p class="lead">Igniting engines, syncing worker protocols, and preparing your browser for liftoff.</p>
+        <div class="progress-track" aria-hidden="true"><div class="progress-fill"></div></div>
+        <div class="actions" style="margin-top: 16px;">
+          <button id="skipIntro" class="btn" type="button" style="min-height: 38px; padding: 6px 14px; font-size: .85rem;">Skip intro</button>
+        </div>
         <a class="back" href="index.html">← Back to home</a>
       </section>
 
       <section id="configPrompt" class="stage" aria-labelledby="promptTitle">
         <p class="eyebrow">Launcher setup</p>
         <h1 id="promptTitle">Do you want to edit the config?</h1>
-        <p class="lead">Set your Cloudflare Worker address and choose the tab title and icon. Your settings stay in this browser.</p>
-        <div class="actions"><button id="editConfig" class="btn primary">Yes, edit config</button><button id="useConfig" class="btn">No, use saved config</button></div>
-        <p id="savedSummary" class="hint"></p>
+        <p class="lead">Customize your Cloudflare Worker, visual theme, tab cloak, and launch behavior. Your settings stay saved in this browser.</p>
+        <div class="actions">
+          <button id="editConfig" class="btn primary">Yes, edit config</button>
+          <button id="useConfig" class="btn">No, use saved config</button>
+        </div>
+        <p id="savedSummary" class="hint" style="margin-top: 16px;"></p>
       </section>
 
       <section id="configStage" class="stage" aria-labelledby="configTitle">
         <p class="eyebrow">Personalize your launch</p>
         <h1 id="configTitle">Launcher config</h1>
         <form id="configForm" class="form">
-          <div class="field"><label for="workerUrl">Worker.dev address</label><input id="workerUrl" type="url" inputmode="url" placeholder="https://your-worker.workers.dev/" autocomplete="url" required><small>Enter your HTTPS workers.dev URL. The launcher checks whether it can be reached.</small></div>
-          <div class="form-grid">
-            <div class="field"><label for="tabTitle">Cloak tab title</label><input id="tabTitle" maxlength="60" value="Classes" placeholder="Classes"></div>
-            <div class="field"><label for="customIcon">Custom icon URL (optional)</label><input id="customIcon" type="url" inputmode="url" placeholder="https://example.com/icon.png"><small>Use an image URL, or choose one of the project icons below.</small></div>
+          <div class="field">
+            <label for="workerUrl">Worker.dev address</label>
+            <input id="workerUrl" type="url" inputmode="url" placeholder="https://your-worker.workers.dev/" autocomplete="url" required>
+            <small>Enter your HTTPS workers.dev URL. The launcher verifies reachability before opening the browser.</small>
           </div>
-          <div class="field"><label>Choose a tab icon</label><div class="icons" role="group" aria-label="Tab icon choices">
-            <button type="button" class="icon-choice" data-icon="Icons/Classroom.svg" aria-label="Google Classroom icon" aria-pressed="false"><img src="Icons/Classroom.svg" alt=""></button>
-            <button type="button" class="icon-choice" data-icon="Icons/docs.svg" aria-label="Google Docs icon" aria-pressed="false"><img src="Icons/docs.svg" alt=""></button>
-            <button type="button" class="icon-choice" data-icon="Icons/google-drive.svg" aria-label="Google Drive icon" aria-pressed="false"><img src="Icons/google-drive.svg" alt=""></button>
-            <button type="button" class="icon-choice" data-icon="Icons/Gemini.svg" aria-label="Gemini icon" aria-pressed="false"><img src="Icons/Gemini.svg" alt=""></button>
-            <button type="button" class="icon-choice" data-icon="Icons/HyperOrain.svg" aria-label="HyperOrian icon" aria-pressed="false"><img src="Icons/HyperOrain.svg" alt=""></button>
-            <button type="button" class="icon-choice" data-icon="Icons/Logo.png" aria-label="HyperOrian logo" aria-pressed="false"><img src="Icons/Logo.png" alt=""></button>
-          </div></div>
+
+          <div class="field">
+            <label>Color theme</label>
+            <div class="themes" role="group" aria-label="Color theme choices">
+              <button type="button" class="theme-choice" data-theme="nebula" aria-pressed="true">
+                <span class="swatch" style="background: linear-gradient(135deg, #10131e, #b6aaff);"></span>Nebula
+              </button>
+              <button type="button" class="theme-choice" data-theme="ocean" aria-pressed="false">
+                <span class="swatch" style="background: linear-gradient(135deg, #0b1622, #5ce1e6);"></span>Deep Ocean
+              </button>
+              <button type="button" class="theme-choice" data-theme="emerald" aria-pressed="false">
+                <span class="swatch" style="background: linear-gradient(135deg, #0d1915, #6ee7b7);"></span>Emerald
+              </button>
+              <button type="button" class="theme-choice" data-theme="sunset" aria-pressed="false">
+                <span class="swatch" style="background: linear-gradient(135deg, #1c1117, #fda4af);"></span>Crimson Dusk
+              </button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="tabTitle">Cloak tab title</label>
+              <input id="tabTitle" maxlength="60" value="Classes" placeholder="Classes">
+            </div>
+            <div class="field">
+              <label for="customIcon">Custom icon URL (optional)</label>
+              <input id="customIcon" type="url" inputmode="url" placeholder="https://example.com/icon.png">
+              <small>Paste an HTTPS image URL, or pick a preset icon below.</small>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Choose a tab icon</label>
+            <div class="icons" role="group" aria-label="Tab icon choices">
+              <button type="button" class="icon-choice" data-icon="Icons/Classroom.svg" aria-label="Google Classroom icon" aria-pressed="false"><img src="Icons/Classroom.svg" alt=""></button>
+              <button type="button" class="icon-choice" data-icon="Icons/docs.svg" aria-label="Google Docs icon" aria-pressed="false"><img src="Icons/docs.svg" alt=""></button>
+              <button type="button" class="icon-choice" data-icon="Icons/google-drive.svg" aria-label="Google Drive icon" aria-pressed="false"><img src="Icons/google-drive.svg" alt=""></button>
+              <button type="button" class="icon-choice" data-icon="Icons/Gemini.svg" aria-label="Gemini icon" aria-pressed="false"><img src="Icons/Gemini.svg" alt=""></button>
+              <button type="button" class="icon-choice" data-icon="Icons/HyperOrain.svg" aria-label="HyperOrian icon" aria-pressed="false"><img src="Icons/HyperOrain.svg" alt=""></button>
+              <button type="button" class="icon-choice" data-icon="Icons/Logo.png" aria-label="HyperOrian logo" aria-pressed="false"><img src="Icons/Logo.png" alt=""></button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="defaultSearchEngine">Default search engine</label>
+              <select id="defaultSearchEngine">
+                <option value="hyperorian">HyperOrian Search</option>
+                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="brave">Brave Search</option>
+                <option value="google">Google</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="launchDestination">Launch destination</label>
+              <select id="launchDestination">
+                <option value="Web.html">Web Browser (Web.html)</option>
+                <option value="Youtubeviewer.html">YouTube Viewer (Youtubeviewer.html)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="toggle-row" for="autoLaunch">
+              <span>
+                <strong>Auto-launch when ready</strong>
+                <small>Automatically redirect to the browser right after the worker check succeeds.</small>
+              </span>
+              <input id="autoLaunch" type="checkbox">
+            </label>
+          </div>
+
           <p id="configStatus" class="status" role="status"></p>
-          <div class="actions"><button class="btn primary" type="submit">Save &amp; check connection</button><button id="cancelConfig" class="btn" type="button">Cancel</button></div>
+          <div class="actions">
+            <button class="btn primary" type="submit">Save &amp; check connection</button>
+            <button id="cancelConfig" class="btn" type="button">Cancel</button>
+          </div>
         </form>
       </section>
 
       <section id="checkingStage" class="stage" aria-live="polite">
-        <p class="eyebrow">Network check</p><h1>Checking your worker</h1>
+        <p class="eyebrow">Network check</p>
+        <h1>Checking your worker</h1>
         <div class="water-scene" aria-hidden="true"><div class="water-pool"></div><div class="vapor"></div><div class="rain"></div></div>
         <p id="checkMessage" class="lead">Water is evaporating and falling as rain while we check the connection…</p>
         <p id="checkStatus" class="status" role="status"></p>
       </section>
 
       <section id="readyStage" class="stage" aria-labelledby="readyTitle">
-        <p class="eyebrow">Connection established</p><h1 id="readyTitle">Successfully loaded</h1>
-        <p class="lead">Your worker responded. The HyperOrian render is ready.</p>
+        <p class="eyebrow">Connection established</p>
+        <h1 id="readyTitle">Successfully loaded</h1>
+        <p id="readyLead" class="lead">Your worker responded and your configuration is applied. Ready to launch HyperOrian.</p>
         <p class="ping"><span class="dot" aria-hidden="true"></span><span id="pingText">Ping measured</span></p>
-        <div class="actions"><button id="startRender" class="btn primary">Start HyperOrian</button><button id="editAgain" class="btn">Edit config</button></div>
+        <div class="actions">
+          <button id="launchWebBtn" class="btn primary">Launch Web Browser</button>
+          <button id="editAgain" class="btn">Edit config</button>
+        </div>
       </section>
 
       <section id="errorStage" class="stage" aria-live="polite">
-        <p class="eyebrow">Connection problem</p><h1>Worker could not be reached</h1>
+        <p class="eyebrow">Connection problem</p>
+        <h1>Worker could not be reached</h1>
         <p id="errorMessage" class="lead">Check the address and try again.</p>
-        <div class="actions"><button id="retryCheck" class="btn primary">Try again</button><button id="errorEdit" class="btn">Edit config</button></div>
-      </section>
-
-      <section id="renderStage" class="render" aria-label="HyperOrian browser">
-        <p class="eyebrow">HyperOrian browser</p>
-        <div class="render-bar"><button id="renderHome" class="btn" type="button">Home</button><input id="address" type="text" placeholder="Search or enter an https:// address" aria-label="Search or enter a website address"><button id="renderGo" class="btn primary" type="button">Go</button><button id="renderYoutube" class="btn" type="button">YouTube</button></div>
-        <iframe id="renderFrame" class="viewer" title="HyperOrian web content" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
-        <p class="render-note">Pages are rendered through the worker you configured. Some sites may block display inside an embedded frame.</p>
+        <div class="actions">
+          <button id="retryCheck" class="btn primary">Try again</button>
+          <button id="errorEdit" class="btn">Edit config</button>
+        </div>
       </section>
     </div>
   </main>
@@ -151,19 +500,27 @@
     (() => {
       const STORAGE_KEY = 'hyperorianLauncherConfig';
       const DEFAULT_WORKER = 'https://hyperorianvpn1.yangdaniel64.workers.dev/';
-      const SEARCH_HOME = 'https://hyperorainweb.onrender.com';
-      const SEARCH_QUERY = 'https://hyperorainweb.onrender.com/search?q=';
+      const THEMES = {
+        nebula: { bg: '#10131e', panel: '#191e2ddd', text: '#f4f6ff', muted: '#aab2c8', accent: '#b6aaff', glow: '#28234d' },
+        ocean: { bg: '#09131d', panel: '#112030dd', text: '#f0f9ff', muted: '#94b8d0', accent: '#5ce1e6', glow: '#13384c' },
+        emerald: { bg: '#0b1612', panel: '#13241edd', text: '#ecfdf5', muted: '#9bc4b5', accent: '#6ee7b7', glow: '#153b2e' },
+        sunset: { bg: '#180f14', panel: '#261720dd', text: '#fff1f2', muted: '#cca3ae', accent: '#fda4af', glow: '#451d2b' }
+      };
       const allowedIcons = ['Icons/Classroom.svg', 'Icons/docs.svg', 'Icons/google-drive.svg', 'Icons/Gemini.svg', 'Icons/HyperOrain.svg', 'Icons/Logo.png'];
       const stages = [...document.querySelectorAll('.stage')];
-      const configPrompt = document.getElementById('configPrompt');
       const configForm = document.getElementById('configForm');
       const workerInput = document.getElementById('workerUrl');
       const titleInput = document.getElementById('tabTitle');
       const iconInput = document.getElementById('customIcon');
+      const searchEngineSelect = document.getElementById('defaultSearchEngine');
+      const destinationSelect = document.getElementById('launchDestination');
+      const autoLaunchCheckbox = document.getElementById('autoLaunch');
       const configStatus = document.getElementById('configStatus');
+
       let selectedIcon = 'Icons/Classroom.svg';
+      let selectedTheme = 'nebula';
       let config = readConfig();
-      let lastCheckStarted = false;
+      let introTimer = null;
 
       function readConfig() {
         try { return { ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') }; }
@@ -171,7 +528,18 @@
       }
       function showStage(id) {
         stages.forEach(stage => stage.classList.toggle('active', stage.id === id));
-        document.getElementById('renderStage').classList.remove('active');
+      }
+      function applyTheme(themeKey) {
+        const theme = THEMES[themeKey] || THEMES.nebula;
+        const root = document.documentElement.style;
+        root.setProperty('--bg', theme.bg);
+        root.setProperty('--panel', theme.panel);
+        root.setProperty('--text', theme.text);
+        root.setProperty('--muted', theme.muted);
+        root.setProperty('--accent', theme.accent);
+        root.setProperty('--accent-glow', theme.glow);
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) metaTheme.setAttribute('content', theme.bg);
       }
       function validWorker(raw) {
         try {
@@ -188,35 +556,67 @@
         selectedIcon = path;
         document.querySelectorAll('.icon-choice').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.icon === path)));
       }
+      function setThemeChoice(themeKey) {
+        selectedTheme = THEMES[themeKey] ? themeKey : 'nebula';
+        document.querySelectorAll('.theme-choice').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.theme === selectedTheme)));
+        applyTheme(selectedTheme);
+      }
       function fillForm() {
         workerInput.value = config.workerUrl || DEFAULT_WORKER;
         titleInput.value = config.tabTitle || 'Classes';
         iconInput.value = config.customIcon || '';
+        searchEngineSelect.value = config.searchEngine || 'hyperorian';
+        destinationSelect.value = config.destination || 'Web.html';
+        autoLaunchCheckbox.checked = Boolean(config.autoLaunch);
         setIconChoice(allowedIcons.includes(config.icon) ? config.icon : 'Icons/Classroom.svg');
+        setThemeChoice(config.theme || 'nebula');
       }
-      function applyCloak() {
+      function applySettings() {
         const title = (config.tabTitle || 'Classes').trim().slice(0, 60) || 'Classes';
         document.title = title;
         document.getElementById('tabIcon').href = safeIcon(config.customIcon || config.icon || 'Icons/Classroom.svg');
+        applyTheme(config.theme || 'nebula');
       }
       function saveConfig(next) {
         config = next;
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch {}
-        applyCloak();
+        applySettings();
       }
-      function openConfig() { fillForm(); configStatus.textContent = ''; configStatus.className = 'status'; showStage('configStage'); workerInput.focus(); }
+      function openConfig() {
+        fillForm();
+        configStatus.textContent = '';
+        configStatus.className = 'status';
+        showStage('configStage');
+        workerInput.focus();
+      }
+      function launchTargetPage() {
+        const target = config.destination === 'Youtubeviewer.html' ? 'Youtubeviewer.html' : 'Web.html';
+        window.location.href = target;
+      }
 
+      document.querySelectorAll('.theme-choice').forEach(button => button.addEventListener('click', () => {
+        setThemeChoice(button.dataset.theme);
+      }));
       document.querySelectorAll('.icon-choice').forEach(button => button.addEventListener('click', () => {
         setIconChoice(button.dataset.icon);
         iconInput.value = '';
       }));
       iconInput.addEventListener('input', () => { if (iconInput.value.trim()) setIconChoice(''); });
+
+      document.getElementById('skipIntro').addEventListener('click', () => {
+        if (introTimer) clearTimeout(introTimer);
+        showStage('configPrompt');
+      });
       document.getElementById('editConfig').addEventListener('click', openConfig);
-      document.getElementById('cancelConfig').addEventListener('click', () => showStage('configPrompt'));
+      document.getElementById('cancelConfig').addEventListener('click', () => {
+        applyTheme(config.theme || 'nebula');
+        showStage('configPrompt');
+      });
       document.getElementById('editAgain').addEventListener('click', openConfig);
       document.getElementById('errorEdit').addEventListener('click', openConfig);
       document.getElementById('useConfig').addEventListener('click', () => beginCheck(false));
       document.getElementById('retryCheck').addEventListener('click', () => beginCheck(false));
+      document.getElementById('launchWebBtn').addEventListener('click', launchTargetPage);
 
       configForm.addEventListener('submit', event => {
         event.preventDefault();
@@ -232,69 +632,78 @@
           try { const parsed = new URL(customIcon); if (parsed.protocol !== 'https:') throw new Error(); }
           catch { configStatus.textContent = 'The custom icon must be a valid HTTPS image URL.'; configStatus.className = 'status error'; iconInput.focus(); return; }
         }
-        saveConfig({ workerUrl, tabTitle: titleInput.value.trim() || 'Classes', icon: selectedIcon || 'Icons/Classroom.svg', customIcon });
+        saveConfig({
+          workerUrl,
+          theme: selectedTheme,
+          tabTitle: titleInput.value.trim() || 'Classes',
+          icon: selectedIcon || 'Icons/Classroom.svg',
+          customIcon,
+          searchEngine: searchEngineSelect.value,
+          destination: destinationSelect.value,
+          autoLaunch: autoLaunchCheckbox.checked
+        });
         beginCheck(true);
       });
 
       async function beginCheck(newlySaved) {
         const workerUrl = validWorker(config.workerUrl || DEFAULT_WORKER);
-        if (!workerUrl) { openConfig(); configStatus.textContent = 'Add a valid HTTPS workers.dev address first.'; configStatus.className = 'status error'; return; }
+        if (!workerUrl) {
+          openConfig();
+          configStatus.textContent = 'Add a valid HTTPS workers.dev address first.';
+          configStatus.className = 'status error';
+          return;
+        }
         config.workerUrl = workerUrl;
         if (!config.tabTitle) config.tabTitle = 'Classes';
         if (!config.icon) config.icon = 'Icons/Classroom.svg';
+        if (!config.theme) config.theme = 'nebula';
         if (newlySaved) saveConfig(config);
-        applyCloak();
-        lastCheckStarted = true;
+        applySettings();
+
         showStage('checkingStage');
         const status = document.getElementById('checkStatus');
         status.className = 'status';
         status.textContent = 'Contacting ' + new URL(workerUrl).hostname + '…';
+
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 9000);
         const started = performance.now();
         try {
-          // no-cors permits a basic reachability check even if the worker does not expose CORS headers.
           await fetch(workerUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', credentials: 'omit', signal: controller.signal });
           const ping = Math.max(1, Math.round(performance.now() - started));
           clearTimeout(timeout);
           document.getElementById('pingText').textContent = `Ping: ${ping} ms`;
           status.textContent = 'Worker reachable · ' + ping + ' ms';
-          setTimeout(() => showStage('readyStage'), 700);
+
+          const destName = config.destination === 'Youtubeviewer.html' ? 'YouTube Viewer' : 'Web Browser';
+          document.getElementById('launchWebBtn').textContent = `Launch ${destName}`;
+
+          setTimeout(() => {
+            if (config.autoLaunch) {
+              document.getElementById('readyLead').textContent = `Worker responded. Redirecting to ${destName}…`;
+              showStage('readyStage');
+              setTimeout(launchTargetPage, 800);
+            } else {
+              document.getElementById('readyLead').textContent = `Your worker responded and your configuration is applied. Ready to open ${destName}.`;
+              showStage('readyStage');
+            }
+          }, 800);
         } catch (error) {
           clearTimeout(timeout);
-          const message = error.name === 'AbortError' ? 'The connection timed out after 9 seconds. Confirm the worker is deployed and try again.' : 'The network could not reach that worker. Check the URL, deployment, and your connection.';
+          const message = error.name === 'AbortError'
+            ? 'The connection timed out after 9 seconds. Confirm the worker is deployed and try again.'
+            : 'The network could not reach that worker. Check the URL, deployment, and your connection.';
           document.getElementById('errorMessage').textContent = message;
           showStage('errorStage');
         }
       }
 
-      function proxyUrl(target) {
-        const worker = validWorker(config.workerUrl || DEFAULT_WORKER);
-        if (!worker) throw new Error('Invalid worker address. Edit the launcher config and try again.');
-        const endpoint = new URL(worker);
-        endpoint.searchParams.set('url', target);
-        return endpoint.href;
+      applySettings();
+      if (config.workerUrl) {
+        const themeLabel = (config.theme || 'nebula').replace(/^\w/, c => c.toUpperCase());
+        document.getElementById('savedSummary').textContent = `Saved worker: ${config.workerUrl} · Theme: ${themeLabel}`;
       }
-      function navigate() {
-        const raw = document.getElementById('address').value.trim();
-        let target = raw || SEARCH_HOME;
-        if (!/^https?:\/\//i.test(target)) target = SEARCH_QUERY + encodeURIComponent(target);
-        try { const parsed = new URL(target); if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error(); document.getElementById('renderFrame').src = proxyUrl(parsed.href); }
-        catch (error) { document.getElementById('checkMessage').textContent = error.message; }
-      }
-      document.getElementById('renderGo').addEventListener('click', navigate);
-      document.getElementById('address').addEventListener('keydown', event => { if (event.key === 'Enter') navigate(); });
-      document.getElementById('renderHome').addEventListener('click', () => { document.getElementById('address').value = ''; document.getElementById('renderFrame').src = proxyUrl(SEARCH_HOME); });
-      document.getElementById('renderYoutube').addEventListener('click', () => { document.getElementById('renderFrame').src = 'Youtubeviewer.html'; });
-      document.getElementById('startRender').addEventListener('click', () => {
-        showStage('readyStage');
-        document.getElementById('renderStage').classList.add('active');
-        document.getElementById('renderFrame').src = proxyUrl(SEARCH_HOME);
-      });
-
-      applyCloak();
-      if (config.workerUrl) document.getElementById('savedSummary').textContent = `Saved worker: ${config.workerUrl}`;
-      window.setTimeout(() => showStage('configPrompt'), 4300);
+      introTimer = window.setTimeout(() => showStage('configPrompt'), 6300);
     })();
   </script>
 </body>
