@@ -7,11 +7,12 @@
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #121218; color: #fff; }
     #topbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; background: #1e1e28; border-bottom: 1px solid #333; align-items: center; }
-    input, select { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a36; color: #fff; font-size: 14px; }
-    #workerInput { width: 240px; }
+    input { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background: #2a2a36; color: #fff; font-size: 14px; }
+    #workerInput { width: 230px; }
     #queryInput { flex: 1; min-width: 200px; }
     button { padding: 8px 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; background: #6c5ce7; color: #fff; }
     button:hover { opacity: 0.9; }
+    #homeBtn { background: #3b3b4f; }
     #cloakBtn { background: #00b894; }
     iframe { flex: 1; border: none; width: 100%; background: #fff; }
   </style>
@@ -19,71 +20,91 @@
 <body>
   <div id="topbar">
     <input id="workerInput" type="text" placeholder="https://workers.dev" />
-    <select id="engineSelect">
-      <option value="ddg">DuckDuckGo Lite (Best)</option>
-      <option value="mojeek">Mojeek Search</option>
-      <option value="brave">Brave Search</option>
-    </select>
-    <input id="queryInput" type="text" placeholder="Search games or enter https://..." />
-    <button id="goBtn">Open</button>
-    <button id="cloakBtn" title="Hide this page inside an about:blank tab">about:blank Cloak</button>
+    <button id="homeBtn" title="Back to DuckDuckGo">Home</button>
+    <input id="queryInput" type="text" placeholder="Search DuckDuckGo or paste https://..." />
+    <button id="goBtn">Search</button>
+    <button id="cloakBtn" title="Hide inside an about:blank tab">about:blank Cloak</button>
   </div>
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
+    // OPTIONAL: Paste your Worker URL inside the quotes below so it's saved permanently
+    const DEFAULT_WORKER_URL = ""; 
+
+    const DDG_HOME = "https://duckduckgo.com";
+    const DDG_SEARCH = "https://duckduckgo.com?q=";
+
     const workerInput = document.getElementById("workerInput");
-    const engineSelect = document.getElementById("engineSelect");
     const queryInput = document.getElementById("queryInput");
     const viewer = document.getElementById("viewer");
 
-    // Load saved Worker URL if available
-    try {
-      const saved = localStorage.getItem("proxy_worker_url");
-      if (saved) workerInput.value = saved;
-    } catch (e) {}
+    function getWorker() {
+      let saved = "";
+      try { saved = localStorage.getItem("proxy_worker_url") || ""; } catch (e) {}
+      return (workerInput.value.trim() || saved || DEFAULT_WORKER_URL).replace(/\/$/, "");
+    }
 
-    workerInput.addEventListener("change", () => {
-      try {
-        localStorage.setItem("proxy_worker_url", workerInput.value.trim().replace(/\/$/, ""));
-      } catch (e) {}
-    });
+    function loadUrl(targetUrl) {
+      const worker = getWorker();
+      if (!worker) return;
+      try { localStorage.setItem("proxy_worker_url", worker); } catch (e) {}
+      workerInput.value = worker;
+      viewer.src = `${worker}/?url=${encodeURIComponent(targetUrl)}`;
+    }
 
     function navigate() {
-      const worker = workerInput.value.trim().replace(/\/$/, "");
+      const worker = getWorker();
       let q = queryInput.value.trim();
-      if (!q) return;
 
       if (!worker) {
         alert("Paste your Cloudflare Worker URL into the first box first.");
         return;
       }
 
-      try { localStorage.setItem("proxy_worker_url", worker); } catch (e) {}
-
-      let targetUrl = q;
-      if (!q.startsWith("http://") && !q.startsWith("https://")) {
-        if (q.includes(".") && !q.includes(" ")) {
-          targetUrl = "https://" + q;
-        } else {
-          const eng = engineSelect.value;
-          if (eng === "mojeek") targetUrl = "https://mojeek.com" + encodeURIComponent(q);
-          else if (eng === "brave") targetUrl = "https://brave.com" + encodeURIComponent(q);
-          else targetUrl = "https://duckduckgo.com" + encodeURIComponent(q);
-        }
+      // If empty, load DuckDuckGo homepage
+      if (!q) {
+        loadUrl(DDG_HOME);
+        return;
       }
 
-      viewer.src = `${worker}/?url=${encodeURIComponent(targetUrl)}`;
+      // Auto-add DuckDuckGo search URL in front unless it already starts with http:// or https://
+      let targetUrl = q;
+      if (!q.startsWith("http://") && !q.startsWith("https://")) {
+        targetUrl = DDG_SEARCH + encodeURIComponent(q);
+      }
+
+      loadUrl(targetUrl);
     }
+
+    // Auto-load DuckDuckGo immediately when the page opens
+    const initialWorker = getWorker();
+    if (initialWorker) {
+      workerInput.value = initialWorker;
+      loadUrl(DDG_HOME);
+    }
+
+    workerInput.addEventListener("change", () => {
+      const w = workerInput.value.trim().replace(/\/$/, "");
+      if (w) {
+        try { localStorage.setItem("proxy_worker_url", w); } catch (e) {}
+        loadUrl(DDG_HOME);
+      }
+    });
+
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      queryInput.value = "";
+      loadUrl(DDG_HOME);
+    });
 
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", (e) => { if (e.key === "Enter") navigate(); });
 
-    // Re-launch the entire browser inside an about:blank tab
+    // Open in an about:blank cloaked tab with DuckDuckGo already loaded
     document.getElementById("cloakBtn").addEventListener("click", () => {
-      const currentWorker = workerInput.value.trim();
+      const currentWorker = getWorker();
       const win = window.open("about:blank", "_blank");
       if (!win) {
-        alert("Pop-up blocked! Enable pop-ups for this file to open the about:blank cloak.");
+        alert("Pop-up blocked! Enable pop-ups for this file to use the about:blank cloak.");
         return;
       }
 
@@ -91,13 +112,14 @@
       win.document.write(`<!DOCTYPE html><html><head><title>Classes</title>${document.head.innerHTML}</head><body>${document.body.innerHTML}</body></html>`);
       win.document.close();
 
-      // Re-attach live JavaScript inside the about:blank tab
       const oldScript = win.document.getElementById("appScript");
       if (oldScript) oldScript.remove();
       const newScript = win.document.createElement("script");
       newScript.textContent = document.getElementById("appScript").textContent;
       win.document.body.appendChild(newScript);
-      win.document.getElementById("workerInput").value = currentWorker;
+      if (currentWorker) {
+        win.document.getElementById("workerInput").value = currentWorker;
+      }
     });
   </script>
 </body>
