@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E88E5" />
+      <stop offset="100%" stop-color="#64B5F6" />
+    </linearGradient>
+
+    
+    <radialGradient id="sunGradient" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF59D" />
+      <stop offset="50%" stop-color="#FFD54F" />
+      <stop offset="100%" stop-color="#FF8F00" />
+    </radialGradient>
+
+    
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD54F" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#FFD54F" stop-opacity="0" />
+    </radialGradient>
+
+    
+    <linearGradient id="cloudGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="75%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+
+    
+    <filter id="cloudShadow" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#0D47A1" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" fill="url(#skyGradient)" />
+
+  
+  <rect x="18" y="18" width="476" height="476" rx="110" ry="110" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="4" />
+
+  
+  <circle cx="325" cy="185" r="135" fill="url(#sunGlow)" />
+  <circle cx="325" cy="185" r="76" fill="url(#sunGradient)" />
+
+  
+  <path d="M 155 375 
+           H 355 
+           C 399.18 375 435 339.18 435 295 
+           C 435 253.75 403.78 219.8 363.65 215.46 
+           C 351.23 166.38 306.82 130 254 130 
+           C 191.59 130 141 180.59 141 243 
+           C 141 246.47 141.16 249.9 141.46 253.29 
+           C 104.88 260.03 77 292.1 77 330.5 
+           C 77 355.08 111.92 375 155 375 Z" fill="url(#cloudGradient)" filter="url(#cloudShadow)" />
+</svg>
