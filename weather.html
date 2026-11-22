@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1022">
+  <title>Weather Forecast | HyperOrian</title>
+  <link rel="icon" href="Icons/Logo.png" type="image/png">
+  <style>
+    :root { color-scheme: dark; --sky:#0b1022; --panel:rgba(22,28,48,.88); --text:#f6f7ff; --muted:#adb5cf; --purple:#a99cff; --cyan:#82d5ef; --line:rgba(255,255,255,.11); }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; overflow-x:hidden; color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:linear-gradient(145deg,#11162b 0%,var(--sky) 55%,#15102a 100%); }
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 15% 15%,#7d72d233,transparent 28%),radial-gradient(circle at 85% 70%,#496d9133,transparent 30%); }
+    .topbar { position:relative; z-index:20; height:72px; display:flex; align-items:center; justify-content:space-between; padding:12px 28px; border-bottom:1px solid var(--line); background:rgba(8,12,26,.72); backdrop-filter:blur(18px); }
+    .back { color:var(--text); text-decoration:none; font-weight:800; display:flex; align-items:center; gap:9px; }
+    .back img { width:42px;height:42px; }
+    main { position:relative; z-index:5; width:min(760px,calc(100% - 24px)); margin:36px auto 70px; }
+    h1 { margin:0 0 18px; text-align:center; font-size:clamp(2rem,7vw,3.5rem); letter-spacing:-.05em; }
+    form { display:flex; gap:8px; margin-bottom:16px; }
+    input { flex:1; min-width:0; padding:14px 16px; border:1px solid var(--line); border-radius:12px; color:var(--text); background:rgba(17,22,43,.85); font:inherit; outline:none; }
+    input:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(130,213,239,.12); }
+    button { padding:14px 18px; border:0; border-radius:12px; color:#15182a; background:var(--cyan); font-weight:800; cursor:pointer; }
+    .status { min-height:24px; text-align:center; color:var(--muted); margin:14px 0; }
+    .error { color:#ffb4b4; }
+    .hidden { display:none!important; }
+    .card { margin-bottom:14px; padding:22px; border:1px solid var(--line); border-radius:20px; background:var(--panel); box-shadow:0 24px 80px #05071355; backdrop-filter:blur(12px); }
+    .current-header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .location-name { font-size:1.25rem; font-weight:800; }
+    .location-sub { color:var(--muted); margin-top:5px; }
+    .temp-big { font-size:4rem; font-weight:900; line-height:1; letter-spacing:-.05em; }
+    .details-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; padding-top:16px; border-top:1px solid var(--line); }
+    .detail-label { color:var(--muted); font-size:.78rem; margin-bottom:5px; }
+    .forecast-list { display:flex; flex-direction:column; gap:7px; }
+    .forecast-row { display:grid; grid-template-columns:1.25fr 1.6fr 1fr; align-items:center; gap:8px; padding:12px; border-radius:10px; background:rgba(11,16,34,.45); }
+    .temps { text-align:right; font-variant-numeric:tabular-nums; }.low { color:var(--muted); margin-left:8px; }
+    footer { text-align:center; color:var(--muted); font-size:.8rem; }
+    footer a { color:var(--cyan); }
+
+    .weather-animation { position:fixed; z-index:2; inset:0; pointer-events:none; overflow:hidden; }
+    .sun { position:absolute; right:8%; top:95px; width:90px; height:90px; border-radius:50%; background:#ffd875; box-shadow:0 0 45px #ffd87599,0 0 100px #ffbd5d66; animation:sunPulse 4s ease-in-out infinite; }
+    .cloud { position:absolute; width:180px; height:48px; border-radius:40px; background:rgba(198,215,238,.19); filter:blur(.2px); animation:cloudDrift 18s linear infinite; }
+    .cloud::before,.cloud::after { content:""; position:absolute; bottom:10px; border-radius:50%; background:inherit; }
+    .cloud::before { left:28px; width:70px;height:70px; }.cloud::after { right:25px;width:82px;height:82px; }
+    .cloud-a { left:-220px; top:145px; }.cloud-b { left:-260px; top:270px; animation-delay:-9s; transform:scale(.7); }
+    .drop { position:absolute; top:-20px; width:2px;height:13px; border-radius:2px; background:linear-gradient(#a9e2ff,#5c90c8); animation:rainFall 1s linear forwards; }
+    .lightning { position:fixed; z-index:3; inset:0; background:#fff; opacity:0; pointer-events:none; }.lightning.flash { animation:flash .22s ease-out; }
+    @keyframes sunPulse { 50% { transform:scale(1.06); box-shadow:0 0 60px #ffd875aa,0 0 120px #ffbd5d77; } }
+    @keyframes cloudDrift { to { transform:translateX(calc(100vw + 500px)); } }
+    @keyframes rainFall { to { transform:translateY(calc(100vh + 40px)); opacity:.15; } }
+    @keyframes flash { 0%,100% { opacity:0 } 15%,35% { opacity:.22 } }
+    @media(max-width:600px){ .topbar{height:64px;padding:10px 14px}.back span{display:none}.back img{width:38px;height:38px} form{flex-direction:column} button{width:100%}.details-grid{grid-template-columns:repeat(3,1fr)}.forecast-row{grid-template-columns:1fr 1.45fr .8fr;font-size:.88rem}.temp-big{font-size:3rem}.sun{width:65px;height:65px;right:5%;top:82px} }
+    @media(prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important} }
+  </style>
+</head>
+<body>
+  <div class="weather-animation" id="weather-animation" aria-hidden="true"><div class="sun"></div><div class="cloud cloud-a"></div><div class="cloud cloud-b"></div><div class="lightning" id="lightning"></div></div>
+  <header class="topbar"><a class="back" href="index.html#pages" aria-label="Back to HyperOrian pages"><img src="Icons/HyperOrain.svg" alt=""><span>HyperOrian</span></a></header>
+  <main>
+    <h1>🌤️ Weather Forecast</h1>
+    <form id="search-form">
+      <input type="text" id="zip-input" placeholder="Enter zip code (47025 or 90210)" inputmode="numeric" pattern="[0-9]{5}" title="Enter a 5-digit US zip code" required>
+      <button type="submit">Get Forecast</button>
+    </form>
+    <div id="status" class="status">Enter a zip code to check the weather.</div>
+    <div id="weather-output" class="hidden">
+      <section class="card">
+        <div class="current-header"><div><div class="location-name" id="loc-name"></div><div class="location-sub" id="current-desc"></div></div><div class="temp-big" id="current-temp"></div></div>
+        <div class="details-grid"><div><div class="detail-label">Feels Like</div><div id="feels-like"></div></div><div><div class="detail-label">Humidity</div><div id="humidity"></div></div><div><div class="detail-label">Wind</div><div id="wind"></div></div></div>
+      </section>
+      <section class="card"><div class="location-name" style="margin-bottom:12px">7-Day Forecast</div><div class="forecast-list" id="forecast-list"></div></section>
+    </div>
+    <footer>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</footer>
+  </main>
+  <script>
+    const weatherCodes={0:["☀️","Clear sky"],1:["🌤️","Mainly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["🌫️","Fog"],48:["🌫️","Rime fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Dense drizzle"],61:["🌧️","Slight rain"],63:["🌧️","Moderate rain"],65:["🌧️","Heavy rain"],71:["🌨️","Slight snow"],73:["🌨️","Moderate snow"],75:["❄️","Heavy snow"],77:["🌨️","Snow grains"],80:["🌦️","Rain showers"],81:["🌧️","Moderate showers"],82:["⛈️","Violent showers"],85:["🌨️","Snow showers"],86:["❄️","Heavy snow showers"],95:["⛈️","Thunderstorm"],96:["⛈️","Thunderstorm with hail"],99:["⛈️","Severe thunderstorm"]};
+    const getWeatherInfo=code=>weatherCodes[code]||["🌡️","Weather code "+code];
+    const form=document.getElementById("search-form"),zipInput=document.getElementById("zip-input"),statusEl=document.getElementById("status"),outputEl=document.getElementById("weather-output");
+
+    let rainTimer;
+    function setWeatherAnimation(code){
+      clearInterval(rainTimer);document.querySelectorAll(".drop").forEach(el=>el.remove());
+      const rainy=[51,53,55,61,63,65,80,81,82,95,96,99].includes(code),stormy=[95,96,99].includes(code);
+      document.querySelector(".sun").style.opacity=rainy?".25":"1";
+      document.querySelectorAll(".cloud").forEach(cloud=>cloud.style.opacity=rainy?"1":".65");
+      if(rainy&&!matchMedia("(prefers-reduced-motion: reduce)").matches){rainTimer=setInterval(()=>{for(let i=0;i<4;i++){const drop=document.createElement("span");drop.className="drop";drop.style.left=(Math.random()*100)+"vw";drop.style.animationDuration=(.55+Math.random()*.7)+"s";document.getElementById("weather-animation").appendChild(drop);drop.addEventListener("animationend",()=>drop.remove())}},120)}
+      if(stormy)setInterval(()=>{const flash=document.getElementById("lightning");flash.classList.remove("flash");void flash.offsetWidth;flash.classList.add("flash")},6500);
+    }
+
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();const query=zipInput.value.trim();if(!query)return;
+      statusEl.textContent="Loading forecast...";statusEl.className="status";outputEl.classList.add("hidden");
+      try{
+        const geoUrl=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`;
+        const geoRes=await fetch(geoUrl);if(!geoRes.ok)throw new Error("Geocoding request failed.");
+        const geoData=await geoRes.json();if(!geoData.results?.length)throw new Error(`No location found for "${query}".`);
+        const place=geoData.results.find(r=>r.country_code==="US"&&/^\d/.test(r.postcode||""))||geoData.results.find(r=>r.country_code==="US")||geoData.results[0];
+        const weatherUrl=`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
+        const weatherRes=await fetch(weatherUrl);if(!weatherRes.ok)throw new Error("Weather request failed.");const weather=await weatherRes.json();
+        const region=[place.admin1,place.country_code].filter(Boolean).join(", ");document.getElementById("loc-name").textContent=`${place.name}${region?", "+region:""}`;
+        const [curIcon,curText]=getWeatherInfo(weather.current.weather_code);document.getElementById("current-desc").textContent=`${curIcon} ${curText}`;document.getElementById("current-temp").textContent=`${Math.round(weather.current.temperature_2m)}°F`;document.getElementById("feels-like").textContent=`${Math.round(weather.current.apparent_temperature)}°F`;document.getElementById("humidity").textContent=`${weather.current.relative_humidity_2m}%`;document.getElementById("wind").textContent=`${Math.round(weather.current.wind_speed_10m)} mph`;
+        const listEl=document.getElementById("forecast-list");listEl.innerHTML="";
+        weather.daily.time.forEach((dateStr,i)=>{const date=new Date(dateStr+"T00:00:00"),dayLabel=i===0?"Today":date.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}),[icon,desc]=getWeatherInfo(weather.daily.weather_code[i]),precip=weather.daily.precipitation_probability_max[i],maxT=Math.round(weather.daily.temperature_2m_max[i]),minT=Math.round(weather.daily.temperature_2m_min[i]);const row=document.createElement("div");row.className="forecast-row";row.innerHTML=`<div><strong>${dayLabel}</strong></div><div>${icon} ${desc}${precip>0?` <small style="color:var(--cyan)">(${precip}%)</small>`:""}</div><div class="temps"><strong>${maxT}°</strong><span class="low">${minT}°</span></div>`;listEl.appendChild(row)});
+        setWeatherAnimation(weather.current.weather_code);statusEl.textContent="";outputEl.classList.remove("hidden");
+      }catch(err){statusEl.textContent=err.message||"Something went wrong.";statusEl.className="status error"}
+    });
+  </script>
+</body>
+</html>
