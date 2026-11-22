@@ -52,8 +52,8 @@
       <button class="quick-link" data-site="https://google.com" title="Gemini">
         <img src="Icons/Gemini.svg" alt="Gemini">
       </button>
-      <button class="quick-link" data-site="https://onrender.com" title="HyperOrain">
-        <img src="Icons/HyperOrain.svg" alt="HyperOrain">
+      <button class="quick-link" data-site="https://frogfind.com" title="Froggy FInd">
+        <img src="Icons/HyperOrain.svg" alt="FrogFind">
       </button>
     </div>
   </div>
@@ -120,9 +120,6 @@
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
 
-    document.getElementById("youtubeBtn").addEventListener("click", () => {
-      viewer.src = "Youtubeviewer.html";
-    });
 
     document.querySelectorAll(".quick-link").forEach(button => {
       button.addEventListener("click", () => loadUrl(button.dataset.site));
