@@ -104,9 +104,7 @@
       try { localStorage.setItem(key, val); } catch (e) {}
     }
 
-    async function loadUrl(targetUrl) {
-      const proxiedUrl = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
-
+    async function loadProxiedUrl(proxiedUrl) {
       if (window.location.protocol === "file:" || window.location.href === "about:blank") {
         try {
           const res = await fetch(proxiedUrl);
@@ -122,6 +120,17 @@
         viewer.src = proxiedUrl;
       }
     }
+
+    function loadUrl(targetUrl) {
+      const proxiedUrl = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
+      loadProxiedUrl(proxiedUrl);
+    }
+
+    window.addEventListener("message", (e) => {
+      if (e.data && e.data.type === "hyperNavigate" && e.data.url) {
+        loadProxiedUrl(e.data.url);
+      }
+    });
 
     function navigate() {
       let q = queryInput.value.trim();
