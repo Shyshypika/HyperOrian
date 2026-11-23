@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Classes</title>
-  <link id="tabIcon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://w3.org>">
+  <link id="tabIcon" rel="icon" href="Icons/Classroom.svg">
   <style>
     * { box-sizing: border-box; font-family: system-ui, sans-serif; }
     body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #121218; color: #fff; }
@@ -52,7 +52,7 @@
       <button class="quick-link" data-site="https://google.com" title="Gemini">
         <img src="Icons/Gemini.svg" alt="Gemini">
       </button>
-      <button class="quick-link" data-site="https://frogfind.com" title="Froggy FInd">
+      <button class="quick-link" data-site="https://frogfind.com" title="Froggy Find">
         <img src="Icons/FrogFind.png" alt="FrogFind">
       </button>
     </div>
@@ -89,18 +89,43 @@
   <iframe id="viewer"></iframe>
 
   <script id="appScript">
-    const WORKER_URL = "https://hyperorianvpn1.yangdaniel64.workers.dev/";
-    const GAME_PROXY = "https://beautiful.thevoiceexchange.com/";
-    const SEARCH_HOME = "https://hyperorainweb.onrender.com";
-    const SEARCH_QUERY = "https://hyperorainweb.onrender.com/search?q=";
+    const WORKER_URL = "https://workers.dev";
+    const GAME_PROXY = "https://thevoiceexchange.com";
+    const SEARCH_HOME = "https://onrender.com";
+    const SEARCH_QUERY = "https://onrender.com/search?q=";
     const queryInput = document.getElementById("queryInput");
     const viewer = document.getElementById("viewer");
 
-    function loadUrl(targetUrl) {
-      if (targetUrl.startsWith("https://onrender.com")) {
+    function safeGetStorage(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function safeSetStorage(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) {}
+    }
+
+    async function loadUrl(targetUrl) {
+      if (targetUrl.startsWith("https://onrender.com") || targetUrl === GAME_PROXY) {
+        viewer.removeAttribute("srcdoc");
         viewer.src = targetUrl;
+        return;
+      }
+
+      const proxiedUrl = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
+
+      if (window.location.protocol === "file:" || window.location.href === "about:blank") {
+        try {
+          const res = await fetch(proxiedUrl);
+          const html = await res.text();
+          viewer.removeAttribute("src");
+          viewer.srcdoc = html;
+        } catch (err) {
+          viewer.removeAttribute("srcdoc");
+          viewer.src = proxiedUrl;
+        }
       } else {
-        viewer.src = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
+        viewer.removeAttribute("srcdoc");
+        viewer.src = proxiedUrl;
       }
     }
 
@@ -120,6 +145,9 @@
     document.getElementById("goBtn").addEventListener("click", navigate);
     queryInput.addEventListener("keypress", e => { if (e.key === "Enter") navigate(); });
 
+    document.getElementById("youtubeBtn").addEventListener("click", () => {
+      window.location.href = "Youtubeviewer.html";
+    });
 
     document.querySelectorAll(".quick-link").forEach(button => {
       button.addEventListener("click", () => loadUrl(button.dataset.site));
@@ -130,19 +158,19 @@
 
     document.getElementById("tabTitle").addEventListener("input", event => {
       document.title = event.target.value || "Classes";
-      localStorage.setItem("hyperorianTabTitle", document.title);
+      safeSetStorage("hyperorianTabTitle", document.title);
     });
 
     document.querySelectorAll(".icon-option").forEach(button => {
       button.addEventListener("click", () => {
         const icon = document.getElementById("tabIcon");
         icon.href = button.dataset.icon;
-        localStorage.setItem("hyperorianTabIcon", button.dataset.icon);
+        safeSetStorage("hyperorianTabIcon", button.dataset.icon);
       });
     });
 
-    const savedTitle = localStorage.getItem("hyperorianTabTitle");
-    const savedIcon = localStorage.getItem("hyperorianTabIcon");
+    const savedTitle = safeGetStorage("hyperorianTabTitle");
+    const savedIcon = safeGetStorage("hyperorianTabIcon");
     if (savedTitle) { document.title = savedTitle; document.getElementById("tabTitle").value = savedTitle; }
     if (savedIcon) document.getElementById("tabIcon").href = savedIcon;
 
