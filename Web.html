@@ -105,12 +105,6 @@
     }
 
     async function loadUrl(targetUrl) {
-      if (targetUrl.startsWith("https://onrender.com") || targetUrl === GAME_PROXY) {
-        viewer.removeAttribute("srcdoc");
-        viewer.src = targetUrl;
-        return;
-      }
-
       const proxiedUrl = `${WORKER_URL}/?url=${encodeURIComponent(targetUrl)}`;
 
       if (window.location.protocol === "file:" || window.location.href === "about:blank") {
